@@ -3,18 +3,20 @@ defmodule RealworldWeb.ArticleLiveTest do
 
   import Phoenix.LiveViewTest
   import Realworld.BlogFixtures
+  import Realworld.AccountsFixtures
 
-  @create_attrs %{status: "some status", title: "some title", body: "some body"}
+  @create_attrs %{status: "published", title: "new article title", body: "some body"}
   @update_attrs %{
-    status: "some updated status",
-    title: "some updated title",
+    status: "draft",
+    title: "some title",
     body: "some updated body"
   }
-  @invalid_attrs %{status: nil, title: nil, body: nil}
+  @invalid_attrs %{status: "draft", title: nil, body: nil}
 
   defp create_article(_) do
-    article = article_fixture()
-    %{article: article}
+    user = user_fixture()
+    article = article_fixture(user: user)
+    %{article: article, user: user}
   end
 
   describe "Index" do
@@ -23,11 +25,14 @@ defmodule RealworldWeb.ArticleLiveTest do
     test "lists all articles", %{conn: conn, article: article} do
       {:ok, _index_live, html} = live(conn, ~p"/articles")
 
-      assert html =~ "Listing Articles"
-      assert html =~ article.status
+      assert html =~ "Global Feed"
+      assert html =~ article.title
     end
 
     test "saves new article", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+      
       {:ok, index_live, _html} = live(conn, ~p"/articles")
 
       assert index_live |> element("a", "New Article") |> render_click() =~
@@ -47,10 +52,12 @@ defmodule RealworldWeb.ArticleLiveTest do
 
       html = render(index_live)
       assert html =~ "Article created successfully"
-      assert html =~ "some status"
+      assert html =~ "new article title"
     end
 
-    test "updates article in listing", %{conn: conn, article: article} do
+    test "updates article in listing", %{conn: conn, article: article, user: user} do
+      conn = log_in_user(conn, user)
+      
       {:ok, index_live, _html} = live(conn, ~p"/articles")
 
       assert index_live |> element("#articles-#{article.id} a", "Edit") |> render_click() =~
@@ -70,10 +77,12 @@ defmodule RealworldWeb.ArticleLiveTest do
 
       html = render(index_live)
       assert html =~ "Article updated successfully"
-      assert html =~ "some updated status"
+      assert html =~ "some updated body"
     end
 
-    test "deletes article in listing", %{conn: conn, article: article} do
+    test "deletes article in listing", %{conn: conn, article: article, user: user} do
+      conn = log_in_user(conn, user)
+      
       {:ok, index_live, _html} = live(conn, ~p"/articles")
 
       assert index_live |> element("#articles-#{article.id} a", "Delete") |> render_click()
@@ -87,11 +96,13 @@ defmodule RealworldWeb.ArticleLiveTest do
     test "displays article", %{conn: conn, article: article} do
       {:ok, _show_live, html} = live(conn, ~p"/articles/#{article}")
 
-      assert html =~ "Show Article"
-      assert html =~ article.status
+      assert html =~ article.title
+      assert html =~ article.body
     end
 
-    test "updates article within modal", %{conn: conn, article: article} do
+    test "updates article within modal", %{conn: conn, article: article, user: user} do
+      conn = log_in_user(conn, user)
+      
       {:ok, show_live, _html} = live(conn, ~p"/articles/#{article}")
 
       assert show_live |> element("a", "Edit") |> render_click() =~
@@ -111,7 +122,7 @@ defmodule RealworldWeb.ArticleLiveTest do
 
       html = render(show_live)
       assert html =~ "Article updated successfully"
-      assert html =~ "some updated status"
+      assert html =~ "some updated body"
     end
   end
 end

@@ -33,9 +33,9 @@ defmodule RealworldWeb.UserSessionControllerTest do
       assert redirected_to(conn) == ~p"/"
 
       # Now do a logged in request and assert on the menu
-      conn = get(conn, ~p"/")
+      conn = get(conn, ~p"/articles")
       response = html_response(conn, 200)
-      assert response =~ user.email
+      assert response =~ user.username
       assert response =~ ~p"/users/settings"
       assert response =~ ~p"/users/log_out"
     end

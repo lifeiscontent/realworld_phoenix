@@ -23,19 +23,20 @@ defmodule RealworldWeb.UserRegistrationControllerTest do
     @tag :capture_log
     test "creates account and logs the user in", %{conn: conn} do
       email = unique_user_email()
+      username = unique_user_username()
 
       conn =
         post(conn, ~p"/users/register", %{
-          "user" => valid_user_attributes(email: email)
+          "user" => valid_user_attributes(email: email, username: username)
         })
 
       assert get_session(conn, :user_token)
       assert redirected_to(conn) == ~p"/"
 
       # Now do a logged in request and assert on the menu
-      conn = get(conn, ~p"/")
+      conn = get(conn, ~p"/articles")
       response = html_response(conn, 200)
-      assert response =~ email
+      assert response =~ username
       assert response =~ ~p"/users/settings"
       assert response =~ ~p"/users/log_out"
     end

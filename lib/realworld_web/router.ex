@@ -70,7 +70,6 @@ defmodule RealworldWeb.Router do
     live "/articles/new", ArticleLive.Index, :new
     live "/articles/:slug/edit", ArticleLive.Index, :edit
 
-    live "/articles/:slug", ArticleLive.Show, :show
     live "/articles/:slug/show/edit", ArticleLive.Show, :edit
 
     live "/profiles/:username", ProfileLive.Show, :show
@@ -90,5 +89,6 @@ defmodule RealworldWeb.Router do
 
     # Global feed accessible to all
     live "/articles", ArticleLive.Index, :index
+    live "/articles/:slug", ArticleLive.Show, :show
   end
 end

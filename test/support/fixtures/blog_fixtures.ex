@@ -20,7 +20,8 @@ defmodule Realworld.BlogFixtures do
       })
       |> Realworld.Blog.create_article()
 
-    article
+    # Preload the same associations as get_article! to ensure consistency
+    Realworld.Repo.preload(article, [:user, :tags])
   end
 
   @doc """
@@ -39,6 +40,7 @@ defmodule Realworld.BlogFixtures do
       })
       |> Realworld.Blog.create_comment()
 
-    comment
+    # Preload the same associations as get_comment! to ensure consistency
+    Realworld.Repo.preload(comment, :user)
   end
 end
