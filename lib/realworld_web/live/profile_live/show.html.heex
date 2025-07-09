@@ -31,11 +31,9 @@
           </button>
         <% end %>
         
-        <%= if @current_user && @current_user.id == @user.id do %>
-          <.link navigate={~p"/users/settings"} class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-center">
-            Edit Profile
-          </.link>
-        <% end %>
+        <.link :if={Policies.permit?(:update_profile, @current_user, @user)} navigate={~p"/users/settings"} class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-center">
+          Edit Profile
+        </.link>
       </div>
     </div>
   </div>
@@ -54,21 +52,20 @@
           <span>Status: {article.status}</span>
           <span>{format_datetime(article.inserted_at, @time_zone)}</span>
         </div>
-        <%= if @current_user && (@current_user.id == article.user_id || @current_user.role == "admin") do %>
-          <div class="mt-4 space-x-4">
-            <.link patch={~p"/articles/#{article}/edit"} class="text-brand hover:underline">
-              Edit
-            </.link>
-            <button
-              phx-click="delete"
-              phx-value-id={article.id}
-              data-confirm="Are you sure?"
-              class="text-red-600 hover:underline"
-            >
-              Delete
-            </button>
-          </div>
-        <% end %>
+        <div :if={Policies.permit?([:update_article, :delete_article], @current_user, article)} class="mt-4 space-x-4">
+          <.link :if={Policies.permit?(:update_article, @current_user, article)} patch={~p"/articles/#{article}/edit"} class="text-brand hover:underline">
+            Edit
+          </.link>
+          <button
+            :if={Policies.permit?(:delete_article, @current_user, article)}
+            phx-click="delete"
+            phx-value-id={article.id}
+            data-confirm="Are you sure?"
+            class="text-red-600 hover:underline"
+          >
+            Delete
+          </button>
+        </div>
       </.link>
     </article>
   </div>

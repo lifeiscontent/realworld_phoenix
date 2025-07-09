@@ -218,9 +218,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - User profiles (username, bio, image with file uploads)
 - Article slugs using Phoenix.Param (SEO-friendly URLs)
 
+### Completed Features (continued):
+- Feed functionality (global and personalized) with infinite scroll
+- Cursor-based pagination with LiveView's phx-viewport-bottom
+- Tag filtering for both global and following feeds
+- User following system
+- Article favorites/likes system
+
 ### Pending Features (LiveView implementation):
-- Feed functionality (global and personalized)
-- Pagination support
+- Article search functionality
+- User notifications system
 
 ## Efficient Data Loading with Ecto
 
@@ -247,5 +254,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   ```
 - This approach loads all data in a single query instead of N+1 queries
 
+## Infinite Scrolling with LiveView
+- Use LiveView's built-in `phx-viewport-bottom` binding - NO custom JavaScript needed
+- Implement cursor-based pagination (not offset-based) for better performance
+- Track pagination state in socket assigns: `:page`, `:per_page`, `:end_of_feed?`, `:last_article_id`
+- Use dynamic padding on container to trigger viewport events: `pb-[calc(200vh)]` when more content available
+- Handle "next-page" event to load more content
+- Streams automatically append new items without re-rendering existing ones
+
+## Template Patterns
+- Use `:if` attribute on elements instead of `<%= if %>` blocks when checking permissions
+- `Policies.permit?` handles nil users, so no need for `@current_user &&` checks
+- Use pattern matching in templates for cleaner routing logic
+- Prefer context-aware navigation links that preserve current feed type
+
+## Query Composition with Joins
+- When adding joins to queries that already have policy scopes, be mindful of binding positions
+- Use `[a, ...]` in join clauses to handle variable number of existing joins
+- Be explicit with bindings in where/order_by clauses when multiple joins exist
+- Example: `where([a, _uf, t], t.name == ^tag_name)` where positions matter
+
+## Policies Enhancements
+- `Policies.permit?/3` now accepts a list of actions: `permit?([:update, :delete], user, resource)`
+- Returns true if ANY action in the list is permitted
+- Reduces code duplication in templates when checking multiple permissions
+
+## Helper Module Organization
+- Extract common functions to dedicated helper modules (e.g., `DateTimeHelpers`)
+- Import helpers in LiveViews that need them to avoid duplication
+- Keep helper modules focused on single responsibilities
+
 ## Code Management Memories
 - never keep stuff for backwards compatibility unless I tell you otherwise
+- Always remove duplicate code by extracting to shared modules
+- Update all references when changing function signatures or module names

@@ -44,15 +44,17 @@ defmodule RealworldWeb.ProfileLive.Show do
     article = Blog.get_article!(id)
     current_user = socket.assigns.current_user
 
-    if current_user && (current_user.id == article.user_id || current_user.role == "admin") do
-      {:ok, _} = Blog.delete_article(article)
+    case Policies.authorize(:delete_article, current_user, article) do
+      :ok ->
+        {:ok, _} = Blog.delete_article(article)
+        
+        {:noreply,
+         socket
+         |> stream_delete(:articles, article)
+         |> put_flash(:info, "Article deleted successfully")}
       
-      {:noreply,
-       socket
-       |> stream_delete(:articles, article)
-       |> put_flash(:info, "Article deleted successfully")}
-    else
-      {:noreply, put_flash(socket, :error, "You are not authorized to delete this article")}
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "You are not authorized to delete this article")}
     end
   end
 

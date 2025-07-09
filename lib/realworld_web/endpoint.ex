@@ -7,7 +7,7 @@ defmodule RealworldWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_realworld_key",
-    signing_salt: "EF4ZAbFI",
+    signing_salt: "rVhFzvLS",
     same_site: "Lax"
   ]
 

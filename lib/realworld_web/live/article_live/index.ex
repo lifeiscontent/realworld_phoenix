@@ -24,9 +24,17 @@ defmodule RealworldWeb.ArticleLive.Index do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :index, _params) do
-    # Global feed - all published articles
-    articles = Blog.list_articles(socket.assigns.current_user, limit: socket.assigns.per_page)
+  defp apply_action(socket, :index, params) do
+    # Global feed - all published articles or filtered by tag
+    tag_name = params["tag"]
+    
+    {articles, page_title} = if tag_name do
+      {Blog.list_articles_by_tag(tag_name, socket.assigns.current_user, limit: socket.assigns.per_page), 
+       "Articles tagged with \"#{tag_name}\""}
+    else
+      {Blog.list_articles(socket.assigns.current_user, limit: socket.assigns.per_page), 
+       "Global Feed"}
+    end
     
     last_article_id = case List.last(articles) do
       nil -> nil
@@ -34,17 +42,26 @@ defmodule RealworldWeb.ArticleLive.Index do
     end
     
     socket
-    |> assign(:page_title, "Global Feed")
+    |> assign(:page_title, page_title)
     |> assign(:page, 1)
+    |> assign(:tag, tag_name)
     |> assign(:end_of_feed?, length(articles) < socket.assigns.per_page)
     |> assign(:last_article_id, last_article_id)
     |> stream(:articles, articles, reset: true)
     |> assign(:article, nil)
   end
 
-  defp apply_action(socket, :following, _params) do
-    # Following feed - articles from followed users
-    articles = Blog.list_following_articles(socket.assigns.current_user, limit: socket.assigns.per_page)
+  defp apply_action(socket, :following, params) do
+    # Following feed - articles from followed users, optionally filtered by tag
+    tag_name = params["tag"]
+    
+    {articles, page_title} = if tag_name do
+      {Blog.list_following_articles_by_tag(tag_name, socket.assigns.current_user, limit: socket.assigns.per_page), 
+       "Following - Tagged with \"#{tag_name}\""}
+    else
+      {Blog.list_following_articles(socket.assigns.current_user, limit: socket.assigns.per_page), 
+       "Following"}
+    end
     
     last_article_id = case List.last(articles) do
       nil -> nil
@@ -52,8 +69,9 @@ defmodule RealworldWeb.ArticleLive.Index do
     end
     
     socket
-    |> assign(:page_title, "Following")
+    |> assign(:page_title, page_title)
     |> assign(:page, 1)
+    |> assign(:tag, tag_name)
     |> assign(:end_of_feed?, length(articles) < socket.assigns.per_page)
     |> assign(:last_article_id, last_article_id)
     |> stream(:articles, articles, reset: true)
@@ -127,10 +145,17 @@ defmodule RealworldWeb.ArticleLive.Index do
     else
       opts = [after: last_article_id, limit: per_page]
       
-      articles = case action do
-        :index -> Blog.list_articles(current_user, opts)
-        :following -> Blog.list_following_articles(current_user, opts)
-        _ -> []
+      articles = case {action, socket.assigns[:tag]} do
+        {:index, nil} -> 
+          Blog.list_articles(current_user, opts)
+        {:index, tag_name} -> 
+          Blog.list_articles_by_tag(tag_name, current_user, opts)
+        {:following, nil} -> 
+          Blog.list_following_articles(current_user, opts)
+        {:following, tag_name} -> 
+          Blog.list_following_articles_by_tag(tag_name, current_user, opts)
+        _ -> 
+          []
       end
       
       new_last_article_id = case List.last(articles) do

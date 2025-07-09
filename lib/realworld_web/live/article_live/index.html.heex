@@ -78,23 +78,30 @@
       
       <div class="flex items-center space-x-2">
         <%= for tag <- article.tags do %>
-          <.link navigate={~p"/articles?tag=#{tag.name}"} class="text-sm bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">
+          <.link 
+            navigate={
+              case @live_action do
+                :following -> ~p"/following/articles?tag=#{tag.name}"
+                _ -> ~p"/articles?tag=#{tag.name}"
+              end
+            } 
+            class="text-sm bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+          >
             <%= tag.name %>
           </.link>
         <% end %>
         
-        <%= if @current_user && (@current_user.id == article.user_id || @current_user.role == "admin") do %>
-          <.link patch={~p"/articles/#{article}/edit"} class="text-sm text-blue-600 hover:underline">
-            Edit
-          </.link>
-          <.link
-            phx-click={JS.push("delete", value: %{id: article.id}) |> hide("##{dom_id}")}
-            data-confirm="Are you sure?"
-            class="text-sm text-red-600 hover:underline"
-          >
-            Delete
-          </.link>
-        <% end %>
+        <.link :if={Policies.permit?(:update_article, @current_user, article)} patch={~p"/articles/#{article}/edit"} class="text-sm text-blue-600 hover:underline">
+          Edit
+        </.link>
+        <.link
+          :if={Policies.permit?(:delete_article, @current_user, article)}
+          phx-click={JS.push("delete", value: %{id: article.id}) |> hide("##{dom_id}")}
+          data-confirm="Are you sure?"
+          class="text-sm text-red-600 hover:underline"
+        >
+          Delete
+        </.link>
       </div>
     </div>
   </article>

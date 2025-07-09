@@ -20,7 +20,7 @@ config :realworld, RealworldWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Realworld.PubSub,
-  live_view: [signing_salt: "nsyAAieb"]
+  live_view: [signing_salt: "ydbsocE2"]
 
 # Configures the mailer
 #

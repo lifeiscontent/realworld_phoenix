@@ -4,6 +4,8 @@ defmodule RealworldWeb.ArticleLive.Show do
   alias Realworld.Blog
   alias Realworld.Blog.Comment
   alias Realworld.Policies
+  
+  import RealworldWeb.DateTimeHelpers
 
   on_mount RealworldWeb.AuthLive
   on_mount RealworldWeb.TimeZoneLive
@@ -38,7 +40,9 @@ defmodule RealworldWeb.ArticleLive.Show do
          |> stream(:comments, comments)
          |> assign(:comment_form, to_form(Blog.change_comment(new_comment)))
          |> assign(:can_comment?, Policies.permit?(:create_comment, current_user, article))
-         |> assign(:can_favorite?, Policies.permit?(:favorite_article, current_user, article))}
+         |> assign(:can_favorite?, Policies.permit?(:favorite_article, current_user, article))
+         |> assign(:can_edit?, Policies.permit?(:update_article, current_user, article))
+         |> assign(:can_delete?, Policies.permit?(:delete_article, current_user, article))}
       
       {:error, :unauthorized} ->
         socket =
@@ -184,15 +188,4 @@ defmodule RealworldWeb.ArticleLive.Show do
 
   defp page_title(:show), do: "Show Article"
   defp page_title(:edit), do: "Edit Article"
-  
-  defp format_datetime(datetime, time_zone) do
-    case DateTime.shift_zone(datetime, time_zone) do
-      {:ok, local_datetime} ->
-        Calendar.strftime(local_datetime, "%B %d, %Y at %I:%M %p")
-      
-      {:error, _} ->
-        # Fallback to UTC if timezone conversion fails
-        Calendar.strftime(datetime, "%B %d, %Y at %I:%M %p UTC")
-    end
-  end
 end

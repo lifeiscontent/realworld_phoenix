@@ -67,9 +67,26 @@ defmodule Realworld.Policies do
   @doc """
   Checks if an action is permitted for a user on a resource.
   
+  Can accept a single action or a list of actions. For a list of actions,
+  returns true if ANY of the actions are permitted.
+  
+  ## Examples
+  
+      iex> permit?(:update_article, user, article)
+      true
+      
+      iex> permit?([:update_article, :delete_article], user, article)
+      true
+  
   Returns true if authorized, false otherwise.
   """
-  def permit?(action, user, resource \\ nil) do
+  def permit?(action, user, resource \\ nil)
+  
+  def permit?(actions, user, resource) when is_list(actions) do
+    Enum.any?(actions, fn action -> permit?(action, user, resource) end)
+  end
+  
+  def permit?(action, user, resource) do
     case authorize(action, user, resource) do
       :ok -> true
       _ -> false

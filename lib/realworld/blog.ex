@@ -386,13 +386,34 @@ defmodule Realworld.Blog do
 
   @doc """
   Lists articles by tag.
+  
+  ## Options
+  
+    * `:after` - cursor for pagination (article ID)
+    * `:limit` - number of articles to return (default: 10)
   """
-  def list_articles_by_tag(tag_name, user) do
+  def list_articles_by_tag(tag_name, user, opts \\ []) do
+    after_cursor = opts[:after]
+    limit = opts[:limit] || 10
+    
     query = from a in Article,
       join: t in assoc(a, :tags),
       where: t.name == ^tag_name,
       distinct: true,
+      order_by: [desc: a.inserted_at, desc: a.id],
+      limit: ^limit,
       preload: [:user, :tags, :comments]
+    
+    query = if after_cursor do
+      # Get the cursor article to compare timestamps
+      cursor_article = Repo.get!(Article, after_cursor)
+      
+      from a in query,
+        where: a.inserted_at < ^cursor_article.inserted_at or 
+               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+    else
+      query
+    end
 
     query
     |> Policies.scope(:list_articles, user)
@@ -453,6 +474,43 @@ defmodule Realworld.Blog do
     query = Article
     |> Policies.scope(:list_following_articles, user)
     |> order_by(desc: :inserted_at, desc: :id)
+    |> limit(^limit)
+    |> preload([:user, :tags, :comments])
+    
+    query = if after_cursor do
+      # Get the cursor article to compare timestamps
+      cursor_article = Repo.get!(Article, after_cursor)
+      
+      from a in query,
+        where: a.inserted_at < ^cursor_article.inserted_at or 
+               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+    else
+      query
+    end
+    
+    query
+    |> with_stats(user)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists articles from followed users filtered by tag.
+  
+  ## Options
+  
+    * `:after` - cursor for pagination (article ID)
+    * `:limit` - number of articles to return (default: 10)
+  """
+  def list_following_articles_by_tag(tag_name, user, opts \\ []) do
+    after_cursor = opts[:after]
+    limit = opts[:limit] || 10
+    
+    query = Article
+    |> Policies.scope(:list_following_articles, user)
+    |> join(:inner, [a, ...], t in assoc(a, :tags))
+    |> where([a, _uf, t], t.name == ^tag_name)
+    |> distinct(true)
+    |> order_by([a], desc: a.inserted_at, desc: a.id)
     |> limit(^limit)
     |> preload([:user, :tags, :comments])
     
