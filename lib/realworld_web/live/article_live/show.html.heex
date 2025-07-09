@@ -1,7 +1,7 @@
 <.header>
   {@article.title}
   <:subtitle>
-    By {@article.user.email} · 
+    By <.link navigate={~p"/users/#{@article.user.username}"} class="text-brand hover:underline">@{@article.user.username}</.link> · 
     Status: {@article.status} · 
     {format_datetime(@article.inserted_at, @time_zone)}
   </:subtitle>
@@ -51,11 +51,24 @@
     </p>
     <div :for={{dom_id, comment} <- @streams.comments} id={dom_id} class="bg-gray-50 p-4 rounded-lg">
       <div class="flex justify-between items-start">
-        <div>
-          <span class="font-semibold">{comment.user.email}</span>
-          <span class="text-sm text-gray-600 ml-2">
-            {format_datetime(comment.inserted_at, @time_zone)}
-          </span>
+        <div class="flex items-start space-x-3">
+          <.link navigate={~p"/users/#{comment.user.username}"}>
+            <%= if comment.user.image do %>
+              <img src={comment.user.image} alt={comment.user.username} class="w-10 h-10 rounded-full object-cover" />
+            <% else %>
+              <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                <span class="text-gray-500 text-lg">👤</span>
+              </div>
+            <% end %>
+          </.link>
+          <div>
+            <.link navigate={~p"/users/#{comment.user.username}"} class="font-semibold text-brand hover:underline">
+              @{comment.user.username}
+            </.link>
+            <span class="text-sm text-gray-600 ml-2">
+              {format_datetime(comment.inserted_at, @time_zone)}
+            </span>
+          </div>
         </div>
         <%= if @current_user && (@current_user.id == comment.user_id || @current_user.role == "admin") do %>
           <button

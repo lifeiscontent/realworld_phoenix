@@ -1,0 +1,61 @@
+<div class="max-w-4xl mx-auto">
+  <div class="bg-gray-100 rounded-lg p-8 mb-8">
+    <div class="flex items-start space-x-6">
+      <%= if @user.image do %>
+        <img src={@user.image} alt={@user.username} class="w-24 h-24 rounded-full object-cover" />
+      <% else %>
+        <div class="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center">
+          <span class="text-gray-500 text-4xl">👤</span>
+        </div>
+      <% end %>
+      
+      <div class="flex-1">
+        <h1 class="text-3xl font-bold mb-2">@{@user.username}</h1>
+        <%= if @user.bio do %>
+          <p class="text-gray-700">{@user.bio}</p>
+        <% end %>
+      </div>
+    </div>
+    
+    <%= if @current_user && @current_user.id == @user.id do %>
+      <div class="mt-4">
+        <.link navigate={~p"/users/settings"} class="text-brand hover:underline">
+          Edit Profile
+        </.link>
+      </div>
+    <% end %>
+  </div>
+
+  <h2 class="text-2xl font-semibold mb-4">Articles by @{@user.username}</h2>
+  
+  <div id="articles" phx-update="stream" class="space-y-4">
+    <p id="articles-empty" class="text-gray-600 only:block hidden">
+      No articles yet.
+    </p>
+    <article :for={{dom_id, article} <- @streams.articles} id={dom_id} class="border rounded-lg p-6 hover:bg-gray-50 transition-colors">
+      <.link navigate={~p"/articles/#{article}"} class="block">
+        <h3 class="text-xl font-semibold mb-2">{article.title}</h3>
+        <p class="text-gray-600 mb-3 line-clamp-3">{article.body}</p>
+        <div class="flex items-center justify-between text-sm text-gray-500">
+          <span>Status: {article.status}</span>
+          <span>{format_datetime(article.inserted_at, @time_zone)}</span>
+        </div>
+        <%= if @current_user && (@current_user.id == article.user_id || @current_user.role == "admin") do %>
+          <div class="mt-4 space-x-4">
+            <.link patch={~p"/articles/#{article}/edit"} class="text-brand hover:underline">
+              Edit
+            </.link>
+            <button
+              phx-click="delete"
+              phx-value-id={article.id}
+              data-confirm="Are you sure?"
+              class="text-red-600 hover:underline"
+            >
+              Delete
+            </button>
+          </div>
+        <% end %>
+      </.link>
+    </article>
+  </div>
+</div>

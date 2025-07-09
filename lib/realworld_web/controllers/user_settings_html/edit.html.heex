@@ -1,9 +1,24 @@
 <.header class="text-center">
   Account Settings
-  <:subtitle>Manage your account email address and password settings</:subtitle>
+  <:subtitle>Manage your profile and account settings</:subtitle>
 </.header>
 
 <div class="space-y-12 divide-y">
+  <div>
+    <.simple_form :let={f} for={@profile_changeset} action={~p"/users/settings"} id="update_profile">
+      <.error :if={@profile_changeset.action}>
+        Oops, something went wrong! Please check the errors below.
+      </.error>
+
+      <input type="hidden" name="action" value="update_profile" />
+
+      <.input field={f[:username]} type="text" label="Username" required />
+      <.input field={f[:bio]} type="textarea" label="Bio" rows="4" />
+      <:actions>
+        <.button phx-disable-with="Saving...">Update Profile</.button>
+      </:actions>
+    </.simple_form>
+  </div>
   <div>
     <.simple_form :let={f} for={@email_changeset} action={~p"/users/settings"} id="update_email">
       <.error :if={@email_changeset.action}>

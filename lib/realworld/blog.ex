@@ -23,6 +23,23 @@ defmodule Realworld.Blog do
   end
 
   @doc """
+  Returns the list of articles for a specific user.
+
+  ## Examples
+
+      iex> list_user_articles(user)
+      [%Article{}, ...]
+
+  """
+  def list_user_articles(%{id: user_id}) do
+    Article
+    |> where(user_id: ^user_id)
+    |> order_by(desc: :inserted_at)
+    |> preload([:user, :comments])
+    |> Repo.all()
+  end
+
+  @doc """
   Returns the list of articles visible to a specific user.
   
   - Admins can see all articles

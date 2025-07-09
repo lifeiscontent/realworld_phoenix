@@ -4,6 +4,9 @@ defmodule Realworld.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :username, :string
+    field :bio, :string
+    field :image, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
@@ -39,8 +42,9 @@ defmodule Realworld.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :time_zone])
+    |> cast(attrs, [:email, :username, :password, :time_zone])
     |> validate_email(opts)
+    |> validate_username(opts)
     |> validate_password(opts)
   end
 
@@ -50,6 +54,16 @@ defmodule Realworld.Accounts.User do
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
     |> validate_length(:email, max: 160)
     |> maybe_validate_unique_email(opts)
+  end
+
+  defp validate_username(changeset, opts) do
+    changeset
+    |> validate_required([:username])
+    # URL-safe characters only: letters, numbers, hyphens, underscores
+    |> validate_format(:username, ~r/^[a-zA-Z0-9_-]+$/, 
+        message: "can only contain letters, numbers, hyphens, and underscores")
+    |> validate_length(:username, min: 3, max: 30)
+    |> maybe_validate_unique_username(opts)
   end
 
   defp validate_password(changeset, opts) do
@@ -83,6 +97,16 @@ defmodule Realworld.Accounts.User do
       changeset
       |> unsafe_validate_unique(:email, Realworld.Repo)
       |> unique_constraint(:email)
+    else
+      changeset
+    end
+  end
+
+  defp maybe_validate_unique_username(changeset, opts) do
+    if Keyword.get(opts, :validate_username, true) do
+      changeset
+      |> unsafe_validate_unique(:username, Realworld.Repo)
+      |> unique_constraint(:username)
     else
       changeset
     end
@@ -157,5 +181,15 @@ defmodule Realworld.Accounts.User do
     else
       add_error(changeset, :current_password, "is not valid")
     end
+  end
+
+  @doc """
+  A user changeset for updating profile fields.
+  """
+  def profile_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:username, :bio, :image])
+    |> validate_username(opts)
+    |> validate_length(:bio, max: 500)
   end
 end

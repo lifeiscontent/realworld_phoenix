@@ -63,8 +63,7 @@ defmodule RealworldWeb.Router do
   scope "/", RealworldWeb do
     pipe_through [:browser, :require_authenticated_user]
 
-    get "/users/settings", UserSettingsController, :edit
-    put "/users/settings", UserSettingsController, :update
+    live "/users/settings", UserSettingsLive.Edit, :edit
     get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
 
     live "/articles", ArticleLive.Index, :index
@@ -73,6 +72,8 @@ defmodule RealworldWeb.Router do
 
     live "/articles/:id", ArticleLive.Show, :show
     live "/articles/:id/show/edit", ArticleLive.Show, :edit
+    
+    live "/users/:username", ProfileLive.Show, :show
   end
 
   scope "/", RealworldWeb do

@@ -3,6 +3,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
 
   alias Realworld.Blog
   alias Realworld.Policies
+  alias Realworld.Repo
 
   @impl true
   def render(assigns) do
@@ -56,6 +57,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
   defp save_article(socket, :edit, article_params) do
     case Blog.update_article(socket.assigns.article, article_params) do
       {:ok, article} ->
+        article = Repo.preload(article, [:user, :comments])
         notify_parent({:saved, article})
 
         {:noreply,
@@ -75,6 +77,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
       :ok ->
         case Blog.create_article(article_params) do
           {:ok, article} ->
+            article = Repo.preload(article, [:user, :comments])
             notify_parent({:saved, article})
 
             {:noreply,
