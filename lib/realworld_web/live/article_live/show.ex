@@ -14,8 +14,8 @@ defmodule RealworldWeb.ArticleLive.Show do
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _, socket) do
-    article = Blog.get_article!(id)
+  def handle_params(%{"slug" => slug}, _, socket) do
+    article = Blog.get_article_by_slug!(slug)
     current_user = socket.assigns.current_user
     
     case Policies.authorize(:view_article, current_user, article) do

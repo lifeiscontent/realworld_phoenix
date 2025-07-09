@@ -31,8 +31,8 @@ defmodule RealworldWeb.ArticleLive.Index do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :edit, %{"id" => id}) do
-    article = Blog.get_article!(id)
+  defp apply_action(socket, :edit, %{"slug" => slug}) do
+    article = Blog.get_article_by_slug!(slug)
     current_user = socket.assigns.current_user
     
     case Policies.authorize(:update_article, current_user, article) do

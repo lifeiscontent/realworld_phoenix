@@ -59,7 +59,8 @@ defmodule Realworld.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
-      {:tz, "~> 0.28"}
+      {:tz, "~> 0.28"},
+      {:slugy, "~> 4.1"}
     ]
   end
 

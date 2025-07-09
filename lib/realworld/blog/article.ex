@@ -1,10 +1,13 @@
 defmodule Realworld.Blog.Article do
   use Ecto.Schema
   import Ecto.Changeset
+  import Slugy
 
+  @derive {Phoenix.Param, key: :slug}
   schema "articles" do
     field :status, :string, default: "draft"
     field :title, :string
+    field :slug, :string
     field :body, :string
     
     belongs_to :user, Realworld.Accounts.User
@@ -20,5 +23,7 @@ defmodule Realworld.Blog.Article do
     |> validate_required([:title, :body, :status, :user_id])
     |> validate_inclusion(:status, ["draft", "published", "archived"])
     |> foreign_key_constraint(:user_id)
+    |> slugify(:title)
+    |> unique_constraint(:slug)
   end
 end

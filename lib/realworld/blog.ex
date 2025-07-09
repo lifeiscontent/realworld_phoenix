@@ -86,6 +86,26 @@ defmodule Realworld.Blog do
   end
 
   @doc """
+  Gets a single article by slug.
+
+  Raises `Ecto.NoResultsError` if the Article does not exist.
+
+  ## Examples
+
+      iex> get_article_by_slug!("my-article")
+      %Article{}
+
+      iex> get_article_by_slug!("nonexistent")
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_article_by_slug!(slug) do
+    Article
+    |> Repo.get_by!(slug: slug)
+    |> Repo.preload(:user)
+  end
+
+  @doc """
   Creates a article.
 
   ## Examples

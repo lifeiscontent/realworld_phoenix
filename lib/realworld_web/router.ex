@@ -68,10 +68,10 @@ defmodule RealworldWeb.Router do
 
     live "/articles", ArticleLive.Index, :index
     live "/articles/new", ArticleLive.Index, :new
-    live "/articles/:id/edit", ArticleLive.Index, :edit
+    live "/articles/:slug/edit", ArticleLive.Index, :edit
 
-    live "/articles/:id", ArticleLive.Show, :show
-    live "/articles/:id/show/edit", ArticleLive.Show, :edit
+    live "/articles/:slug", ArticleLive.Show, :show
+    live "/articles/:slug/show/edit", ArticleLive.Show, :edit
     
     live "/users/:username", ProfileLive.Show, :show
   end
