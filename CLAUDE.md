@@ -155,12 +155,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Don't mix business logic together e.g. time_zone and user might be related, but do not directly overlap
 - Create separate modules for distinct concerns (e.g., TimeZoneLive for timezone handling, AuthLive for authentication)
 
+## Database Fields and Validation
+- Required fields in the database (null: false) should NEVER have fallbacks in the UI
+- If a field is required, trust that it exists - don't add defensive checks like `@user.username || @user.email`
+- Username is a required field for all users and must be unique
+- Username validation: URL-safe characters only (letters, numbers, hyphens, underscores)
+- ALWAYS update changesets when adding new fields - if you add a field to the schema, add it to the relevant changeset's cast/3 call
+- When implementing file uploads or any form that updates database fields, ensure the changeset accepts those fields
+
 ## Timezone Handling
 - Users have a `time_zone` field that stores their preferred timezone
 - Timezone is captured from browser on registration and updated on each login
 - Use `on_mount RealworldWeb.TimeZoneLive` in LiveViews that need timezone support
 - TimeZoneLive assigns `:time_zone` to socket based on user preference or browser timezone
 - Format timestamps using `format_datetime/2` function that converts UTC to user's local time
+
+## Git Workflow
+- ALWAYS commit completed features before starting new ones
+- Create logical, atomic commits for each feature
+- Don't mix multiple features in a single commit
+- Run `git status` to check what needs to be committed
+- Write clear commit messages that describe what was implemented
 
 ## Current Implementation Status
 ### Completed Features:
