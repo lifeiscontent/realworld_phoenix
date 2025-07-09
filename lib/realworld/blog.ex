@@ -7,6 +7,7 @@ defmodule Realworld.Blog do
   alias Realworld.Repo
 
   alias Realworld.Blog.Article
+  alias Realworld.Blog.ArticleFavorite
   alias Realworld.Accounts.User
 
   @doc """
@@ -279,5 +280,64 @@ defmodule Realworld.Blog do
   """
   def change_comment(%Comment{} = comment, attrs \\ %{}) do
     Comment.changeset(comment, attrs)
+  end
+
+  @doc """
+  Favorites an article for a user.
+  """
+  def favorite_article(%User{id: user_id}, %Article{id: article_id}) do
+    %ArticleFavorite{}
+    |> ArticleFavorite.changeset(%{user_id: user_id, article_id: article_id})
+    |> Repo.insert()
+    |> case do
+      {:ok, _} -> {:ok, get_article!(article_id)}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Unfavorites an article for a user.
+  """
+  def unfavorite_article(%User{id: user_id}, %Article{id: article_id}) do
+    query = from f in ArticleFavorite,
+      where: f.user_id == ^user_id and f.article_id == ^article_id
+    
+    case Repo.delete_all(query) do
+      {0, _} -> {:error, :not_found}
+      {_, _} -> {:ok, get_article!(article_id)}
+    end
+  end
+
+  @doc """
+  Checks if a user has favorited an article.
+  """
+  def favorited?(%User{id: user_id}, %Article{id: article_id}) do
+    ArticleFavorite
+    |> where([f], f.user_id == ^user_id and f.article_id == ^article_id)
+    |> Repo.exists?()
+  end
+
+  def favorited?(nil, _article), do: false
+
+  @doc """
+  Gets the favorites count for an article.
+  """
+  def get_favorites_count(%Article{id: article_id}) do
+    ArticleFavorite
+    |> where([f], f.article_id == ^article_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Preloads article with favorites count and favorited status for a user.
+  """
+  def load_article_stats(%Article{} = article, user) do
+    article
+    |> Map.put(:favorites_count, get_favorites_count(article))
+    |> Map.put(:favorited, favorited?(user, article))
+  end
+
+  def load_article_stats(articles, user) when is_list(articles) do
+    Enum.map(articles, &load_article_stats(&1, user))
   end
 end

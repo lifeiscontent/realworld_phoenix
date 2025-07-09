@@ -19,11 +19,17 @@ defmodule RealworldWeb.ProfileLive.Show do
          |> push_navigate(to: ~p"/")}
 
       user ->
+        current_user = socket.assigns.current_user
+        articles = 
+          user
+          |> Blog.list_user_articles()
+          |> Blog.load_article_stats(current_user)
+          
         {:ok,
          socket
          |> assign(:page_title, "@#{user.username}")
          |> assign(:user, user)
-         |> stream(:articles, Blog.list_user_articles(user))}
+         |> stream(:articles, articles)}
     end
   end
 

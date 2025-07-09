@@ -52,6 +52,11 @@ defmodule Realworld.Policies do
   def authorize(:update_comment, %User{id: user_id}, %Comment{user_id: user_id}), do: :ok
   def authorize(:delete_comment, %User{id: user_id}, %Comment{user_id: user_id}), do: :ok
 
+  # Favorite actions
+  def authorize(:favorite_article, %User{}, %Article{status: "published"}), do: :ok
+  def authorize(:favorite_article, %User{id: user_id}, %Article{user_id: user_id}), do: :ok
+  def authorize(:unfavorite_article, %User{}, %Article{}), do: :ok
+
   # Default deny
   def authorize(_action, _user, _resource), do: {:error, :unauthorized}
 

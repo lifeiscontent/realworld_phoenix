@@ -17,6 +17,12 @@
   <:col :let={{_id, article}} label="Body">{article.body}</:col>
   <:col :let={{_id, article}} label="Status">{article.status}</:col>
   <:col :let={{_id, article}} label="Comments">{length(article.comments)}</:col>
+  <:col :let={{_id, article}} label="Favorites">
+    <span class="flex items-center gap-1">
+      {if article.favorited, do: "❤️", else: "🤍"}
+      {article.favorites_count}
+    </span>
+  </:col>
   <:action :let={{_id, article}}>
     <div class="sr-only">
       <.link navigate={~p"/articles/#{article}"}>Show</.link>

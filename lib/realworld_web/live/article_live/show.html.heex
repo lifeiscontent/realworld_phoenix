@@ -14,6 +14,23 @@
   </:actions>
 </.header>
 
+<div class="flex items-center gap-4 my-4">
+  <%= if @can_favorite? do %>
+    <button
+      phx-click="toggle_favorite"
+      class={"flex items-center gap-2 px-4 py-2 rounded-md border transition-colors " <> if @article.favorited, do: "bg-brand text-white border-brand hover:bg-brand-dark", else: "bg-white text-brand border-brand hover:bg-brand hover:text-white"}
+    >
+      <span class="text-lg">{if @article.favorited, do: "❤️", else: "🤍"}</span>
+      <span>{@article.favorites_count}</span>
+    </button>
+  <% else %>
+    <div class="flex items-center gap-2 px-4 py-2 text-gray-600">
+      <span class="text-lg">🤍</span>
+      <span>{@article.favorites_count}</span>
+    </div>
+  <% end %>
+</div>
+
 <div class="prose max-w-none my-8">
   <p class="whitespace-pre-wrap">{@article.body}</p>
 </div>

@@ -14,6 +14,9 @@ defmodule Realworld.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :role, :string, default: "user"
     field :time_zone, :string, default: "UTC"
+    
+    has_many :favorites, Realworld.Blog.ArticleFavorite
+    has_many :favorited_articles, through: [:favorites, :article]
 
     timestamps(type: :utc_datetime)
   end

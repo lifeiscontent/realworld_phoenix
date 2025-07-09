@@ -24,6 +24,7 @@ defmodule RealworldWeb.ArticleLive.Show do
         Phoenix.PubSub.subscribe(Realworld.PubSub, "article:#{article.id}:comments")
         
         comments = Blog.list_article_comments(article)
+        article_with_stats = Blog.load_article_stats(article, current_user)
         
         new_comment = %Comment{
           user_id: current_user && current_user.id,
@@ -33,10 +34,11 @@ defmodule RealworldWeb.ArticleLive.Show do
         {:noreply,
          socket
          |> assign(:page_title, page_title(socket.assigns.live_action))
-         |> assign(:article, article)
+         |> assign(:article, article_with_stats)
          |> stream(:comments, comments)
          |> assign(:comment_form, to_form(Blog.change_comment(new_comment)))
-         |> assign(:can_comment?, Policies.permit?(:create_comment, current_user, article))}
+         |> assign(:can_comment?, Policies.permit?(:create_comment, current_user, article))
+         |> assign(:can_favorite?, Policies.permit?(:favorite_article, current_user, article))}
       
       {:error, :unauthorized} ->
         socket =
@@ -119,6 +121,34 @@ defmodule RealworldWeb.ArticleLive.Show do
       
       {:error, :unauthorized} ->
         {:noreply, put_flash(socket, :error, "You can only delete your own comments")}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_favorite", _params, socket) do
+    current_user = socket.assigns.current_user
+    article = socket.assigns.article
+    
+    if current_user do
+      result = if article.favorited do
+        Blog.unfavorite_article(current_user, article)
+      else
+        Blog.favorite_article(current_user, article)
+      end
+      
+      case result do
+        {:ok, _updated_article} ->
+          updated_article = Blog.load_article_stats(article, current_user)
+          {:noreply, assign(socket, :article, updated_article)}
+        
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to update favorite")}
+      end
+    else
+      {:noreply, 
+       socket
+       |> put_flash(:error, "You must be logged in to favorite articles")
+       |> push_navigate(to: ~p"/users/log_in")}
     end
   end
 
