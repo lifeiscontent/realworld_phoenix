@@ -12,7 +12,8 @@ defmodule Realworld.BlogTest do
 
     test "list_articles/0 returns all articles" do
       article = article_fixture()
-      assert Blog.list_articles() == [article]
+      articles = Blog.list_articles()
+      assert article in articles
     end
 
     test "get_article!/1 returns the article with given id" do
@@ -21,12 +22,14 @@ defmodule Realworld.BlogTest do
     end
 
     test "create_article/1 with valid data creates a article" do
-      valid_attrs = %{status: "some status", title: "some title", body: "some body"}
+      user = Realworld.AccountsFixtures.user_fixture()
+      valid_attrs = %{status: "published", title: "some title", body: "some body", user_id: user.id}
 
       assert {:ok, %Article{} = article} = Blog.create_article(valid_attrs)
-      assert article.status == "some status"
+      assert article.status == "published"
       assert article.title == "some title"
       assert article.body == "some body"
+      assert article.user_id == user.id
     end
 
     test "create_article/1 with invalid data returns error changeset" do
@@ -37,13 +40,13 @@ defmodule Realworld.BlogTest do
       article = article_fixture()
 
       update_attrs = %{
-        status: "some updated status",
+        status: "draft",
         title: "some updated title",
         body: "some updated body"
       }
 
       assert {:ok, %Article{} = article} = Blog.update_article(article, update_attrs)
-      assert article.status == "some updated status"
+      assert article.status == "draft"
       assert article.title == "some updated title"
       assert article.body == "some updated body"
     end

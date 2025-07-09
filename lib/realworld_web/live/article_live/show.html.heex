@@ -1,11 +1,14 @@
 <div class="mb-8">
   <h1 class="text-3xl font-bold text-gray-900 mb-6">{@article.title}</h1>
-  
+
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
       <.user_avatar user={@article.user} link={true} size="md" />
       <div>
-        <.link navigate={~p"/profiles/#{@article.user}"} class="font-semibold text-gray-900 hover:text-brand">
+        <.link
+          navigate={~p"/profiles/#{@article.user}"}
+          class="font-semibold text-gray-900 hover:text-brand"
+        >
           @{@article.user.username}
         </.link>
         <div class="text-sm text-gray-500">
@@ -13,7 +16,7 @@
         </div>
       </div>
     </div>
-    
+
     <div class="flex items-center gap-3">
       <%= if @can_edit? do %>
         <.link patch={~p"/articles/#{@article}/show/edit"} phx-click={JS.push_focus()}>
@@ -32,15 +35,19 @@
       class="flex items-center gap-2"
     >
       <span class="text-lg">{if @article.favorited, do: "❤️", else: "🤍"}</span>
-      <span>{@article.favorites_count} {if @article.favorites_count == 1, do: "like", else: "likes"}</span>
+      <span>
+        {@article.favorites_count} {if @article.favorites_count == 1, do: "like", else: "likes"}
+      </span>
     </.button>
   <% else %>
     <div class="flex items-center gap-2 px-4 py-2 text-gray-600 bg-gray-50 rounded-lg">
       <span class="text-lg">🤍</span>
-      <span>{@article.favorites_count} {if @article.favorites_count == 1, do: "like", else: "likes"}</span>
+      <span>
+        {@article.favorites_count} {if @article.favorites_count == 1, do: "like", else: "likes"}
+      </span>
     </div>
   <% end %>
-  
+
   <div class="text-sm text-gray-500">
     Status: <span class="font-medium capitalize">{@article.status}</span>
   </div>

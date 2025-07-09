@@ -92,10 +92,7 @@ defmodule RealworldWeb.AppComponents do
       <div class="flex items-center mb-6">
         <.user_avatar user={@article.user} link={true} class="mr-4" />
         <div>
-          <.link
-            navigate={~p"/profiles/#{@article.user}"}
-            class="font-semibold hover:underline"
-          >
+          <.link navigate={~p"/profiles/#{@article.user}"} class="font-semibold hover:underline">
             {@article.user.username}
           </.link>
           <div class="text-sm text-gray-500 mt-1">
@@ -129,7 +126,9 @@ defmodule RealworldWeb.AppComponents do
             </.link>
             <.link
               :if={@current_user && Policies.permit?(:delete_article, @current_user, @article)}
-              phx-click={@on_delete || JS.push("delete", value: %{id: @article.id}) |> hide("##{@id}")}
+              phx-click={
+                @on_delete || JS.push("delete", value: %{id: @article.id}) |> hide("##{@id}")
+              }
               data-confirm="Are you sure?"
               class="text-sm text-red-600 hover:underline"
             >

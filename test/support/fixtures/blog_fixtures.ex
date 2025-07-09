@@ -8,12 +8,15 @@ defmodule Realworld.BlogFixtures do
   Generate a article.
   """
   def article_fixture(attrs \\ %{}) do
+    user = attrs[:user] || Realworld.AccountsFixtures.user_fixture()
+    
     {:ok, article} =
       attrs
       |> Enum.into(%{
         body: "some body",
-        status: "some status",
-        title: "some title"
+        status: "published",
+        title: "some title",
+        user_id: user.id
       })
       |> Realworld.Blog.create_article()
 
@@ -24,10 +27,15 @@ defmodule Realworld.BlogFixtures do
   Generate a comment.
   """
   def comment_fixture(attrs \\ %{}) do
+    user = attrs[:user] || Realworld.AccountsFixtures.user_fixture()
+    article = attrs[:article] || article_fixture()
+    
     {:ok, comment} =
       attrs
       |> Enum.into(%{
-        content: "some content"
+        content: "some content",
+        user_id: user.id,
+        article_id: article.id
       })
       |> Realworld.Blog.create_comment()
 

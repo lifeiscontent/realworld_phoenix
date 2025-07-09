@@ -8,7 +8,6 @@ defmodule RealworldWeb.ProfileLive.Show do
   on_mount RealworldWeb.AuthLive
   on_mount RealworldWeb.TimeZoneLive
 
-  import RealworldWeb.DateTimeHelpers
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do

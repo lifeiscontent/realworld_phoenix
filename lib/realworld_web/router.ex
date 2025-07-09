@@ -65,6 +65,7 @@ defmodule RealworldWeb.Router do
 
     live "/users/settings", UserSettingsLive.Edit, :edit
     get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
+    put "/users/settings", UserSettingsController, :update
 
     live "/articles/new", ArticleLive.Index, :new
     live "/articles/:slug/edit", ArticleLive.Index, :edit
