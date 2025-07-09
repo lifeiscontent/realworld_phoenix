@@ -31,6 +31,16 @@
   <% end %>
 </div>
 
+<%= if @article.tags != [] do %>
+  <div class="flex flex-wrap gap-2 my-4">
+    <%= for tag <- @article.tags do %>
+      <span class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
+        {tag.name}
+      </span>
+    <% end %>
+  </div>
+<% end %>
+
 <div class="prose max-w-none my-8">
   <p class="whitespace-pre-wrap">{@article.body}</p>
 </div>

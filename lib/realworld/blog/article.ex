@@ -16,6 +16,10 @@ defmodule Realworld.Blog.Article do
     has_many :comments, Realworld.Blog.Comment
     has_many :favorites, Realworld.Blog.ArticleFavorite
     has_many :favorited_by, through: [:favorites, :user]
+    
+    many_to_many :tags, Realworld.Blog.Tag,
+      join_through: "article_tags",
+      on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

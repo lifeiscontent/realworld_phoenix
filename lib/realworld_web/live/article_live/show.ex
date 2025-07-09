@@ -4,6 +4,7 @@ defmodule RealworldWeb.ArticleLive.Show do
   alias Realworld.Blog
   alias Realworld.Blog.Comment
   alias Realworld.Policies
+  alias Realworld.Repo
 
   on_mount RealworldWeb.AuthLive
   on_mount RealworldWeb.TimeZoneLive
@@ -23,6 +24,7 @@ defmodule RealworldWeb.ArticleLive.Show do
         # Subscribe to comments for this article
         Phoenix.PubSub.subscribe(Realworld.PubSub, "article:#{article.id}:comments")
         
+        article = Repo.preload(article, :tags)
         comments = Blog.list_article_comments(article)
         article_with_stats = Blog.load_article_stats(article, current_user)
         
@@ -174,6 +176,12 @@ defmodule RealworldWeb.ArticleLive.Show do
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({RealworldWeb.ArticleLive.FormComponent, {:saved, article}}, socket) do
+    article_with_stats = Blog.load_article_stats(article, socket.assigns.current_user)
+    {:noreply, assign(socket, :article, article_with_stats)}
   end
 
   defp page_title(:show), do: "Show Article"

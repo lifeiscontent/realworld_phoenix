@@ -8,6 +8,7 @@ defmodule Realworld.Blog do
 
   alias Realworld.Blog.Article
   alias Realworld.Blog.ArticleFavorite
+  alias Realworld.Blog.Tag
   alias Realworld.Accounts.User
 
   @doc """
@@ -36,7 +37,7 @@ defmodule Realworld.Blog do
     Article
     |> where(user_id: ^user_id)
     |> order_by(desc: :inserted_at)
-    |> preload([:user, :comments])
+    |> preload([:user, :comments, :tags])
     |> Repo.all()
   end
 
@@ -52,7 +53,7 @@ defmodule Realworld.Blog do
     |> filter_by_user_visibility(user)
     |> preload(:user)
     |> Repo.all()
-    |> Repo.preload(:comments)
+    |> Repo.preload([:comments, :tags])
   end
 
   defp filter_by_user_visibility(query, %User{role: "admin"}), do: query
@@ -83,7 +84,7 @@ defmodule Realworld.Blog do
   def get_article!(id) do
     Article
     |> Repo.get!(id)
-    |> Repo.preload(:user)
+    |> Repo.preload([:user, :tags])
   end
 
   @doc """
@@ -103,7 +104,7 @@ defmodule Realworld.Blog do
   def get_article_by_slug!(slug) do
     Article
     |> Repo.get_by!(slug: slug)
-    |> Repo.preload(:user)
+    |> Repo.preload([:user, :tags])
   end
 
   @doc """
@@ -339,5 +340,79 @@ defmodule Realworld.Blog do
 
   def load_article_stats(articles, user) when is_list(articles) do
     Enum.map(articles, &load_article_stats(&1, user))
+  end
+
+  @doc """
+  Lists all tags.
+  """
+  def list_tags do
+    Tag
+    |> order_by(:name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets or creates a tag by name.
+  """
+  def get_or_create_tag(name) do
+    name = String.trim(name)
+    
+    case Repo.get_by(Tag, name: name) do
+      nil ->
+        %Tag{}
+        |> Tag.changeset(%{name: name})
+        |> Repo.insert()
+      tag ->
+        {:ok, tag}
+    end
+  end
+
+  @doc """
+  Associates tags with an article.
+  Tags should be provided as a list of tag names.
+  """
+  def update_article_tags(%Article{} = article, tag_names) when is_list(tag_names) do
+    # Delete existing tags
+    from(at in "article_tags", where: at.article_id == ^article.id)
+    |> Repo.delete_all()
+    
+    # Insert new tags
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    
+    tag_entries = Enum.map(tag_names, fn name ->
+      case get_or_create_tag(name) do
+        {:ok, tag} -> 
+          %{
+            article_id: article.id,
+            tag_id: tag.id,
+            inserted_at: now
+          }
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+    
+    if tag_entries != [] do
+      Repo.insert_all("article_tags", tag_entries)
+    end
+    
+    {:ok, Repo.preload(article, :tags, force: true)}
+  end
+
+  @doc """
+  Lists articles by tag.
+  """
+  def list_articles_by_tag(tag_name, user) do
+    query = from a in Article,
+      join: t in assoc(a, :tags),
+      where: t.name == ^tag_name,
+      distinct: true,
+      preload: [:user, :tags]
+
+    query
+    |> filter_by_user_visibility(user)
+    |> Repo.all()
+    |> Repo.preload(:comments)
+    |> load_article_stats(user)
   end
 end

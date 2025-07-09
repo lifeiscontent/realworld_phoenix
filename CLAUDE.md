@@ -184,6 +184,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Check for all usages before removing functions using grep/search tools
 - When using Phoenix.Param to change URL parameters, ensure all links and route handlers are updated
 
+## Many-to-Many Associations and Join Tables
+- When using `@primary_key false` on join tables, you CANNOT use `Repo.delete` - use `Repo.delete_all` with a query instead
+- Ecto's `put_assoc` does NOT automatically add timestamps to join tables
+- For join tables with timestamps, manually insert with `Repo.insert_all` and include timestamp fields
+- Example: `Repo.insert_all("article_tags", [%{article_id: 1, tag_id: 1, inserted_at: DateTime.utc_now()}])`
+
+## LiveView Component Communication
+- When a LiveComponent sends messages to its parent using `notify_parent`, the parent MUST have a matching `handle_info/2` clause
+- FormComponent pattern: `send(self(), {__MODULE__, {:saved, resource}})` requires parent to handle `{ComponentModule, {:saved, resource}}`
+- Always check that parent LiveViews handle component messages when using the notify pattern
+
 ## Current Implementation Status
 ### Completed Features:
 - User authentication (registration, login, logout, password reset)
