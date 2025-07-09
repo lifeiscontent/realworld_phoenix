@@ -57,6 +57,10 @@ defmodule Realworld.Policies do
   def authorize(:favorite_article, %User{id: user_id}, %Article{user_id: user_id}), do: :ok
   def authorize(:unfavorite_article, %User{}, %Article{}), do: :ok
 
+  # Following actions
+  def authorize(:follow_user, %User{id: follower_id}, %User{id: following_id}) when follower_id != following_id, do: :ok
+  def authorize(:unfollow_user, %User{}, %User{}), do: :ok
+
   # Default deny
   def authorize(_action, _user, _resource), do: {:error, :unauthorized}
 

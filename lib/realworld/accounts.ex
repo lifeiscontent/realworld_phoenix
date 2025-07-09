@@ -6,7 +6,7 @@ defmodule Realworld.Accounts do
   import Ecto.Query, warn: false
   alias Realworld.Repo
 
-  alias Realworld.Accounts.{User, UserToken, UserNotifier}
+  alias Realworld.Accounts.{User, UserToken, UserNotifier, UserFollow}
 
   ## Database getters
 
@@ -404,5 +404,81 @@ defmodule Realworld.Accounts do
       {:ok, %{user: user}} -> {:ok, user}
       {:error, :user, changeset, _} -> {:error, changeset}
     end
+  end
+
+  ## Following
+
+  @doc """
+  Follows a user.
+  """
+  def follow_user(%User{id: follower_id}, %User{id: following_id}) do
+    %UserFollow{}
+    |> UserFollow.changeset(%{follower_id: follower_id, following_id: following_id})
+    |> Repo.insert()
+    |> case do
+      {:ok, _} -> {:ok, get_user!(following_id)}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Unfollows a user.
+  """
+  def unfollow_user(%User{id: follower_id}, %User{id: following_id}) do
+    query = from f in UserFollow,
+      where: f.follower_id == ^follower_id and f.following_id == ^following_id
+    
+    case Repo.delete_all(query) do
+      {0, _} -> {:error, :not_found}
+      {_, _} -> {:ok, get_user!(following_id)}
+    end
+  end
+
+  @doc """
+  Checks if a user is following another user.
+  """
+  def following?(%User{id: follower_id}, %User{id: following_id}) do
+    UserFollow
+    |> where([f], f.follower_id == ^follower_id and f.following_id == ^following_id)
+    |> Repo.exists?()
+  end
+
+  def following?(nil, _user), do: false
+  def following?(_user, nil), do: false
+
+  @doc """
+  Gets the followers count for a user.
+  """
+  def get_followers_count(%User{id: user_id}) do
+    UserFollow
+    |> where([f], f.following_id == ^user_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Gets the following count for a user.
+  """
+  def get_following_count(%User{id: user_id}) do
+    UserFollow
+    |> where([f], f.follower_id == ^user_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Lists users that a user is following.
+  """
+  def list_following(%User{id: user_id}) do
+    User
+    |> join(:inner, [u], f in UserFollow, on: f.following_id == u.id and f.follower_id == ^user_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists followers of a user.
+  """
+  def list_followers(%User{id: user_id}) do
+    User
+    |> join(:inner, [u], f in UserFollow, on: f.follower_id == u.id and f.following_id == ^user_id)
+    |> Repo.all()
   end
 end

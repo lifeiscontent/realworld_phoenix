@@ -17,6 +17,14 @@ defmodule Realworld.Accounts.User do
     
     has_many :favorites, Realworld.Blog.ArticleFavorite
     has_many :favorited_articles, through: [:favorites, :article]
+    
+    # Users this user follows
+    has_many :active_follows, Realworld.Accounts.UserFollow, foreign_key: :follower_id
+    has_many :following, through: [:active_follows, :following]
+    
+    # Users following this user
+    has_many :passive_follows, Realworld.Accounts.UserFollow, foreign_key: :following_id
+    has_many :followers, through: [:passive_follows, :follower]
 
     timestamps(type: :utc_datetime)
   end
