@@ -15,8 +15,16 @@
   </:actions>
 </.header>
 
-<div id="articles" phx-update="stream" class="mt-8 space-y-6">
-  <p :if={@streams.articles == []} class="text-gray-500">
+<div 
+  id="articles" 
+  phx-update="stream" 
+  phx-viewport-bottom={!@end_of_feed? && JS.push("next-page")}
+  class={[
+    "mt-8 space-y-6",
+    if(@end_of_feed?, do: "pb-10", else: "pb-[calc(200vh)]")
+  ]}
+>
+  <p id="articles-empty" phx-update="ignore" class="text-gray-500 only:block hidden">
     <%= if @live_action == :following do %>
       No articles from people you follow yet. Follow some users to see their articles here!
     <% else %>
@@ -90,6 +98,10 @@
       </div>
     </div>
   </article>
+</div>
+
+<div :if={@end_of_feed? && @page > 1} class="text-center py-10 text-gray-500">
+  <p class="text-lg">You've reached the end of the feed</p>
 </div>
 
 <.modal :if={@live_action in [:new, :edit]} id="article-modal" show on_cancel={JS.patch(~p"/articles")}>

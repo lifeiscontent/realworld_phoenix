@@ -9,6 +9,13 @@ defmodule RealworldWeb.ArticleLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    socket =
+      socket
+      |> assign(:page, 1)
+      |> assign(:per_page, 10)
+      |> assign(:end_of_feed?, false)
+      |> assign(:last_article_id, nil)
+      
     {:ok, socket}
   end
 
@@ -19,21 +26,37 @@ defmodule RealworldWeb.ArticleLive.Index do
 
   defp apply_action(socket, :index, _params) do
     # Global feed - all published articles
-    articles = Blog.list_articles(socket.assigns.current_user)
+    articles = Blog.list_articles(socket.assigns.current_user, limit: socket.assigns.per_page)
+    
+    last_article_id = case List.last(articles) do
+      nil -> nil
+      article -> article.id
+    end
     
     socket
     |> assign(:page_title, "Global Feed")
-    |> stream(:articles, articles)
+    |> assign(:page, 1)
+    |> assign(:end_of_feed?, length(articles) < socket.assigns.per_page)
+    |> assign(:last_article_id, last_article_id)
+    |> stream(:articles, articles, reset: true)
     |> assign(:article, nil)
   end
 
   defp apply_action(socket, :following, _params) do
     # Following feed - articles from followed users
-    articles = Blog.list_following_articles(socket.assigns.current_user)
+    articles = Blog.list_following_articles(socket.assigns.current_user, limit: socket.assigns.per_page)
+    
+    last_article_id = case List.last(articles) do
+      nil -> nil
+      article -> article.id
+    end
     
     socket
     |> assign(:page_title, "Following")
-    |> stream(:articles, articles)
+    |> assign(:page, 1)
+    |> assign(:end_of_feed?, length(articles) < socket.assigns.per_page)
+    |> assign(:last_article_id, last_article_id)
+    |> stream(:articles, articles, reset: true)
     |> assign(:article, nil)
   end
 
@@ -91,6 +114,38 @@ defmodule RealworldWeb.ArticleLive.Index do
           |> put_flash(:error, "You are not authorized to delete this article.")
         
         {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("next-page", _params, socket) do
+    %{current_user: current_user, live_action: action, page: page, per_page: per_page, last_article_id: last_article_id} = socket.assigns
+    
+    # Don't paginate if there's no cursor
+    if last_article_id == nil do
+      {:noreply, socket}
+    else
+      opts = [after: last_article_id, limit: per_page]
+      
+      articles = case action do
+        :index -> Blog.list_articles(current_user, opts)
+        :following -> Blog.list_following_articles(current_user, opts)
+        _ -> []
+      end
+      
+      new_last_article_id = case List.last(articles) do
+        nil -> last_article_id
+        article -> article.id
+      end
+      
+      socket =
+        socket
+        |> assign(:page, page + 1)
+        |> assign(:end_of_feed?, length(articles) < per_page)
+        |> assign(:last_article_id, new_last_article_id)
+        |> stream(:articles, articles)
+      
+      {:noreply, socket}
     end
   end
 end
