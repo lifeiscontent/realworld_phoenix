@@ -18,7 +18,7 @@ defmodule RealworldWeb.UserSessionController do
           Accounts.update_user_time_zone(user, time_zone)
         end
       end
-      
+
       conn
       |> put_flash(:info, "Welcome back!")
       |> UserAuth.log_in_user(user, user_params)

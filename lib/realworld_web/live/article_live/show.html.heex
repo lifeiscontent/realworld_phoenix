@@ -1,55 +1,68 @@
-<.header>
-  {@article.title}
-  <:subtitle>
-    By <.link navigate={~p"/profiles/#{@article.user}"} class="text-brand hover:underline">@{@article.user.username}</.link> · 
-    Status: {@article.status} · 
-    {format_datetime(@article.inserted_at, @time_zone)}
-  </:subtitle>
-  <:actions>
-    <%= if @can_edit? do %>
-      <.link patch={~p"/articles/#{@article}/show/edit"} phx-click={JS.push_focus()}>
-        <.button>Edit article</.button>
-      </.link>
-    <% end %>
-  </:actions>
-</.header>
+<div class="mb-8">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">{@article.title}</h1>
+  
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <.user_avatar user={@article.user} link={true} size="md" />
+      <div>
+        <.link navigate={~p"/profiles/#{@article.user}"} class="font-semibold text-gray-900 hover:text-brand">
+          @{@article.user.username}
+        </.link>
+        <div class="text-sm text-gray-500">
+          {format_datetime(@article.inserted_at, @time_zone)}
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <%= if @can_edit? do %>
+        <.link patch={~p"/articles/#{@article}/show/edit"} phx-click={JS.push_focus()}>
+          <.button variant="secondary">Edit article</.button>
+        </.link>
+      <% end %>
+    </div>
+  </div>
+</div>
 
-<div class="flex items-center gap-4 my-4">
+<div class="flex items-center gap-4 mb-6 pb-6 border-b border-gray-200">
   <%= if @can_favorite? do %>
-    <button
+    <.button
       phx-click="toggle_favorite"
-      class={"flex items-center gap-2 px-4 py-2 rounded-md border transition-colors " <> if @article.favorited, do: "bg-brand text-white border-brand hover:bg-brand-dark", else: "bg-white text-brand border-brand hover:bg-brand hover:text-white"}
+      variant={if @article.favorited, do: "primary", else: "outline"}
+      class="flex items-center gap-2"
     >
       <span class="text-lg">{if @article.favorited, do: "❤️", else: "🤍"}</span>
-      <span>{@article.favorites_count}</span>
-    </button>
+      <span>{@article.favorites_count} {if @article.favorites_count == 1, do: "like", else: "likes"}</span>
+    </.button>
   <% else %>
-    <div class="flex items-center gap-2 px-4 py-2 text-gray-600">
+    <div class="flex items-center gap-2 px-4 py-2 text-gray-600 bg-gray-50 rounded-lg">
       <span class="text-lg">🤍</span>
-      <span>{@article.favorites_count}</span>
+      <span>{@article.favorites_count} {if @article.favorites_count == 1, do: "like", else: "likes"}</span>
     </div>
   <% end %>
+  
+  <div class="text-sm text-gray-500">
+    Status: <span class="font-medium capitalize">{@article.status}</span>
+  </div>
 </div>
 
 <%= if @article.tags != [] do %>
-  <div class="flex flex-wrap gap-2 my-4">
-    <%= for tag <- @article.tags do %>
-      <span class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-        {tag.name}
-      </span>
-    <% end %>
+  <div class="mb-8">
+    <.tag_list tags={@article.tags} />
   </div>
 <% end %>
 
-<div class="prose max-w-none my-8">
-  <p class="whitespace-pre-wrap">{@article.body}</p>
+<div class="prose max-w-none my-12">
+  <div class="text-lg leading-relaxed whitespace-pre-wrap text-gray-800">
+    {@article.body}
+  </div>
 </div>
 
 <hr class="my-8" />
 
 <div class="mt-8">
   <h2 class="text-xl font-semibold mb-4">Comments</h2>
-  
+
   <%= if @can_comment? do %>
     <.simple_form for={@comment_form} id="comment-form" phx-submit="save_comment" class="mb-6">
       <.input field={@comment_form[:user_id]} type="hidden" />
@@ -71,50 +84,25 @@
       </p>
     <% end %>
   <% end %>
-  
+
   <div id="comments" phx-update="stream" class="space-y-4">
     <p id="comments-empty" class="text-gray-600 only:block hidden">
       No comments yet. Be the first to comment!
     </p>
-    <div :for={{dom_id, comment} <- @streams.comments} id={dom_id} class="bg-gray-50 p-4 rounded-lg">
-      <div class="flex justify-between items-start">
-        <div class="flex items-start space-x-3">
-          <.link navigate={~p"/profiles/#{comment.user}"}>
-            <%= if comment.user.image do %>
-              <img src={comment.user.image} alt={comment.user.username} class="w-10 h-10 rounded-full object-cover" />
-            <% else %>
-              <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                <span class="text-gray-500 text-lg">👤</span>
-              </div>
-            <% end %>
-          </.link>
-          <div>
-            <.link navigate={~p"/profiles/#{comment.user}"} class="font-semibold text-brand hover:underline">
-              @{comment.user.username}
-            </.link>
-            <span class="text-sm text-gray-600 ml-2">
-              {format_datetime(comment.inserted_at, @time_zone)}
-            </span>
-          </div>
-        </div>
-        <button
-          :if={Policies.permit?(:delete_comment, @current_user, comment)}
-          phx-click="delete_comment"
-          phx-value-id={comment.id}
-          data-confirm="Are you sure you want to delete this comment?"
-          class="text-red-600 hover:text-red-800 text-sm"
-        >
-          Delete
-        </button>
-      </div>
-      <p class="mt-2 whitespace-pre-wrap">{comment.content}</p>
+    <div :for={{dom_id, comment} <- @streams.comments} id={dom_id}>
+      <.comment comment={comment} current_user={@current_user} time_zone={@time_zone} />
     </div>
   </div>
 </div>
 
 <.back navigate={~p"/articles"}>Back to articles</.back>
 
-<.modal :if={@live_action == :edit} id="article-modal" show on_cancel={JS.patch(~p"/articles/#{@article}")}>
+<.modal
+  :if={@live_action == :edit}
+  id="article-modal"
+  show
+  on_cancel={JS.patch(~p"/articles/#{@article}")}
+>
   <.live_component
     module={RealworldWeb.ArticleLive.FormComponent}
     id={@article.id}

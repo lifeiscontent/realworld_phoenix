@@ -14,14 +14,14 @@ defmodule Realworld.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :role, :string, default: "user"
     field :time_zone, :string, default: "UTC"
-    
+
     has_many :favorites, Realworld.Blog.ArticleFavorite
     has_many :favorited_articles, through: [:favorites, :article]
-    
+
     # Users this user follows
     has_many :active_follows, Realworld.Accounts.UserFollow, foreign_key: :follower_id
     has_many :following, through: [:active_follows, :following]
-    
+
     # Users following this user
     has_many :passive_follows, Realworld.Accounts.UserFollow, foreign_key: :following_id
     has_many :followers, through: [:passive_follows, :follower]
@@ -72,8 +72,9 @@ defmodule Realworld.Accounts.User do
     changeset
     |> validate_required([:username])
     # URL-safe characters only: letters, numbers, hyphens, underscores
-    |> validate_format(:username, ~r/^[a-zA-Z0-9_-]+$/, 
-        message: "can only contain letters, numbers, hyphens, and underscores")
+    |> validate_format(:username, ~r/^[a-zA-Z0-9_-]+$/,
+      message: "can only contain letters, numbers, hyphens, and underscores"
+    )
     |> validate_length(:username, min: 3, max: 30)
     |> maybe_validate_unique_username(opts)
   end

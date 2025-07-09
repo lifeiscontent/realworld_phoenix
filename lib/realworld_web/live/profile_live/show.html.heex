@@ -1,72 +1,53 @@
 <div class="max-w-4xl mx-auto">
   <div class="bg-gray-100 rounded-lg p-8 mb-8">
     <div class="flex items-start space-x-6">
-      <%= if @user.image do %>
-        <img src={@user.image} alt={@user.username} class="w-24 h-24 rounded-full object-cover" />
-      <% else %>
-        <div class="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center">
-          <span class="text-gray-500 text-4xl">👤</span>
-        </div>
-      <% end %>
-      
+      <.user_avatar user={@user} size="lg" />
+
       <div class="flex-1">
         <h1 class="text-3xl font-bold mb-2">@{@user.username}</h1>
         <%= if @user.bio do %>
           <p class="text-gray-700 mb-3">{@user.bio}</p>
         <% end %>
-        
+
         <div class="flex items-center gap-4 text-sm text-gray-600">
           <span>{@followers_count} followers</span>
           <span>{@following_count} following</span>
         </div>
       </div>
-      
+
       <div class="flex flex-col gap-2">
         <%= if @can_follow? do %>
-          <button
+          <.button
             phx-click="toggle_follow"
-            class={"px-4 py-2 rounded-md transition-colors " <> if @following, do: "bg-gray-300 text-gray-700 hover:bg-gray-400", else: "bg-brand text-white hover:bg-brand-dark"}
+            variant={if @following, do: "secondary", else: "primary"}
           >
             {if @following, do: "Unfollow", else: "Follow"}
-          </button>
+          </.button>
         <% end %>
-        
-        <.link :if={Policies.permit?(:update_profile, @current_user, @user)} navigate={~p"/users/settings"} class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-center">
-          Edit Profile
+
+        <.link
+          :if={Policies.permit?(:update_profile, @current_user, @user)}
+          navigate={~p"/users/settings"}
+        >
+          <.button variant="secondary">Edit Profile</.button>
         </.link>
       </div>
     </div>
   </div>
 
   <h2 class="text-2xl font-semibold mb-4">Articles by @{@user.username}</h2>
-  
+
   <div id="articles" phx-update="stream" class="space-y-4">
     <p id="articles-empty" class="text-gray-600 only:block hidden">
       No articles yet.
     </p>
-    <article :for={{dom_id, article} <- @streams.articles} id={dom_id} class="border rounded-lg p-6 hover:bg-gray-50 transition-colors">
-      <.link navigate={~p"/articles/#{article}"} class="block">
-        <h3 class="text-xl font-semibold mb-2">{article.title}</h3>
-        <p class="text-gray-600 mb-3 line-clamp-3">{article.body}</p>
-        <div class="flex items-center justify-between text-sm text-gray-500">
-          <span>Status: {article.status}</span>
-          <span>{format_datetime(article.inserted_at, @time_zone)}</span>
-        </div>
-        <div :if={Policies.permit?([:update_article, :delete_article], @current_user, article)} class="mt-4 space-x-4">
-          <.link :if={Policies.permit?(:update_article, @current_user, article)} patch={~p"/articles/#{article}/edit"} class="text-brand hover:underline">
-            Edit
-          </.link>
-          <button
-            :if={Policies.permit?(:delete_article, @current_user, article)}
-            phx-click="delete"
-            phx-value-id={article.id}
-            data-confirm="Are you sure?"
-            class="text-red-600 hover:underline"
-          >
-            Delete
-          </button>
-        </div>
-      </.link>
-    </article>
+    <div :for={{dom_id, article} <- @streams.articles} id={dom_id}>
+      <.article_card
+        article={article}
+        current_user={@current_user}
+        id={dom_id}
+        live_action={@live_action}
+      />
+    </div>
   </div>
 </div>

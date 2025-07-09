@@ -11,12 +11,12 @@ defmodule Realworld.Blog.Article do
     field :body, :string
     field :favorites_count, :integer, virtual: true, default: 0
     field :favorited, :boolean, virtual: true, default: false
-    
+
     belongs_to :user, Realworld.Accounts.User
     has_many :comments, Realworld.Blog.Comment
     has_many :favorites, Realworld.Blog.ArticleFavorite
     has_many :favorited_by, through: [:favorites, :user]
-    
+
     many_to_many :tags, Realworld.Blog.Tag,
       join_through: "article_tags",
       on_replace: :delete

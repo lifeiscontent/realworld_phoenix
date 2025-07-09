@@ -22,11 +22,11 @@ defmodule RealworldWeb.ProfileLive.Show do
       user ->
         current_user = socket.assigns.current_user
         articles = Blog.list_user_articles(user, current_user)
-        
+
         following = current_user && Accounts.following?(current_user, user)
         followers_count = Accounts.get_followers_count(user)
         following_count = Accounts.get_following_count(user)
-          
+
         {:ok,
          socket
          |> assign(:page_title, "@#{user.username}")
@@ -47,12 +47,12 @@ defmodule RealworldWeb.ProfileLive.Show do
     case Policies.authorize(:delete_article, current_user, article) do
       :ok ->
         {:ok, _} = Blog.delete_article(article)
-        
+
         {:noreply,
          socket
          |> stream_delete(:articles, article)
          |> put_flash(:info, "Article deleted successfully")}
-      
+
       {:error, :unauthorized} ->
         {:noreply, put_flash(socket, :error, "You are not authorized to delete this article")}
     end
@@ -62,29 +62,30 @@ defmodule RealworldWeb.ProfileLive.Show do
   def handle_event("toggle_follow", _params, socket) do
     current_user = socket.assigns.current_user
     user = socket.assigns.user
-    
+
     if current_user do
-      result = if socket.assigns.following do
-        Accounts.unfollow_user(current_user, user)
-      else
-        Accounts.follow_user(current_user, user)
-      end
-      
+      result =
+        if socket.assigns.following do
+          Accounts.unfollow_user(current_user, user)
+        else
+          Accounts.follow_user(current_user, user)
+        end
+
       case result do
         {:ok, _} ->
           following = Accounts.following?(current_user, user)
           followers_count = Accounts.get_followers_count(user)
-          
-          {:noreply, 
+
+          {:noreply,
            socket
            |> assign(:following, following)
            |> assign(:followers_count, followers_count)}
-        
+
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Failed to update follow status")}
       end
     else
-      {:noreply, 
+      {:noreply,
        socket
        |> put_flash(:error, "You must be logged in to follow users")
        |> push_navigate(to: ~p"/users/log_in")}

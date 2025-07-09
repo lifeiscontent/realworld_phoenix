@@ -34,14 +34,18 @@ defmodule RealworldWeb.UserSettingsLive.Edit do
   def handle_event("save_profile", %{"user" => user_params}, socket) do
     user = socket.assigns.current_user
 
-    user_params = 
+    user_params =
       case consume_uploaded_entries(socket, :avatar, fn %{path: path}, entry ->
-        file_name = "#{user.id}-#{:erlang.phash2(DateTime.utc_now())}#{Path.extname(entry.client_name)}"
-        dest = Path.join([:code.priv_dir(:realworld), "static", "uploads", "avatars", file_name])
-        File.mkdir_p!(Path.dirname(dest))
-        File.cp!(path, dest)
-        {:ok, "/uploads/avatars/#{file_name}"}
-      end) do
+             file_name =
+               "#{user.id}-#{:erlang.phash2(DateTime.utc_now())}#{Path.extname(entry.client_name)}"
+
+             dest =
+               Path.join([:code.priv_dir(:realworld), "static", "uploads", "avatars", file_name])
+
+             File.mkdir_p!(Path.dirname(dest))
+             File.cp!(path, dest)
+             {:ok, "/uploads/avatars/#{file_name}"}
+           end) do
         [image_path] -> Map.put(user_params, "image", image_path)
         [] -> user_params
       end
@@ -65,7 +69,11 @@ defmodule RealworldWeb.UserSettingsLive.Edit do
   end
 
   @impl true
-  def handle_event("validate_email", %{"current_password" => _password, "user" => user_params}, socket) do
+  def handle_event(
+        "validate_email",
+        %{"current_password" => _password, "user" => user_params},
+        socket
+      ) do
     changeset =
       socket.assigns.current_user
       |> Accounts.change_user_email(user_params)
@@ -88,7 +96,10 @@ defmodule RealworldWeb.UserSettingsLive.Edit do
 
         {:noreply,
          socket
-         |> put_flash(:info, "A link to confirm your email change has been sent to the new address.")
+         |> put_flash(
+           :info,
+           "A link to confirm your email change has been sent to the new address."
+         )
          |> assign(:email_form, to_form(Accounts.change_user_email(user)))}
 
       {:error, changeset} ->
@@ -97,7 +108,11 @@ defmodule RealworldWeb.UserSettingsLive.Edit do
   end
 
   @impl true
-  def handle_event("validate_password", %{"current_password" => _password, "user" => user_params}, socket) do
+  def handle_event(
+        "validate_password",
+        %{"current_password" => _password, "user" => user_params},
+        socket
+      ) do
     changeset =
       socket.assigns.current_user
       |> Accounts.change_user_password(user_params)
@@ -107,7 +122,11 @@ defmodule RealworldWeb.UserSettingsLive.Edit do
   end
 
   @impl true
-  def handle_event("save_password", %{"current_password" => password, "user" => user_params}, socket) do
+  def handle_event(
+        "save_password",
+        %{"current_password" => password, "user" => user_params},
+        socket
+      ) do
     user = socket.assigns.current_user
 
     case Accounts.update_user_password(user, password, user_params) do

@@ -31,22 +31,25 @@ defmodule Realworld.Blog do
     after_cursor = opts[:after]
     limit = opts[:limit] || 10
 
-    query = Article
-    |> where(status: "published")
-    |> order_by(desc: :inserted_at, desc: :id)
-    |> limit(^limit)
-    |> preload([:user, :tags, :comments])
+    query =
+      Article
+      |> where(status: "published")
+      |> order_by(desc: :inserted_at, desc: :id)
+      |> limit(^limit)
+      |> preload([:user, :tags, :comments])
 
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
+    query =
+      if after_cursor do
+        # Get the cursor article to compare timestamps
+        cursor_article = Repo.get!(Article, after_cursor)
 
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
+        from a in query,
+          where:
+            a.inserted_at < ^cursor_article.inserted_at or
+              (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+      else
+        query
+      end
 
     query
     |> with_stats(user)
@@ -89,22 +92,25 @@ defmodule Realworld.Blog do
     after_cursor = opts[:after]
     limit = opts[:limit] || 10
 
-    query = Article
-    |> Policies.scope(:list_following_articles, user)
-    |> order_by(desc: :inserted_at, desc: :id)
-    |> limit(^limit)
-    |> preload([:user, :tags, :comments])
+    query =
+      Article
+      |> Policies.scope(:list_following_articles, user)
+      |> order_by(desc: :inserted_at, desc: :id)
+      |> limit(^limit)
+      |> preload([:user, :tags, :comments])
 
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
+    query =
+      if after_cursor do
+        # Get the cursor article to compare timestamps
+        cursor_article = Repo.get!(Article, after_cursor)
 
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
+        from a in query,
+          where:
+            a.inserted_at < ^cursor_article.inserted_at or
+              (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+      else
+        query
+      end
 
     query
     |> with_stats(user)
@@ -123,24 +129,27 @@ defmodule Realworld.Blog do
     after_cursor = opts[:after]
     limit = opts[:limit] || 10
 
-    query = from a in Article,
-      join: t in assoc(a, :tags),
-      where: t.name == ^tag_name,
-      distinct: true,
-      order_by: [desc: a.inserted_at, desc: a.id],
-      limit: ^limit,
-      preload: [:user, :tags, :comments]
+    query =
+      from a in Article,
+        join: t in assoc(a, :tags),
+        where: t.name == ^tag_name,
+        distinct: true,
+        order_by: [desc: a.inserted_at, desc: a.id],
+        limit: ^limit,
+        preload: [:user, :tags, :comments]
 
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
+    query =
+      if after_cursor do
+        # Get the cursor article to compare timestamps
+        cursor_article = Repo.get!(Article, after_cursor)
 
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
+        from a in query,
+          where:
+            a.inserted_at < ^cursor_article.inserted_at or
+              (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+      else
+        query
+      end
 
     query
     |> Policies.scope(:list_articles, user)
@@ -160,25 +169,28 @@ defmodule Realworld.Blog do
     after_cursor = opts[:after]
     limit = opts[:limit] || 10
 
-    query = Article
-    |> Policies.scope(:list_following_articles, user)
-    |> join(:inner, [a, ...], t in assoc(a, :tags))
-    |> where([a, _uf, t], t.name == ^tag_name)
-    |> distinct(true)
-    |> order_by([a], desc: a.inserted_at, desc: a.id)
-    |> limit(^limit)
-    |> preload([:user, :tags, :comments])
+    query =
+      Article
+      |> Policies.scope(:list_following_articles, user)
+      |> join(:inner, [a, ...], t in assoc(a, :tags))
+      |> where([a, _uf, t], t.name == ^tag_name)
+      |> distinct(true)
+      |> order_by([a], desc: a.inserted_at, desc: a.id)
+      |> limit(^limit)
+      |> preload([:user, :tags, :comments])
 
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
+    query =
+      if after_cursor do
+        # Get the cursor article to compare timestamps
+        cursor_article = Repo.get!(Article, after_cursor)
 
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
+        from a in query,
+          where:
+            a.inserted_at < ^cursor_article.inserted_at or
+              (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+      else
+        query
+      end
 
     query
     |> with_stats(user)
@@ -313,18 +325,21 @@ defmodule Realworld.Blog do
     # Insert new tags
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    tag_entries = Enum.map(tag_names, fn name ->
-      case get_or_create_tag(name) do
-        {:ok, tag} ->
-          %{
-            article_id: article.id,
-            tag_id: tag.id,
-            inserted_at: now
-          }
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
+    tag_entries =
+      Enum.map(tag_names, fn name ->
+        case get_or_create_tag(name) do
+          {:ok, tag} ->
+            %{
+              article_id: article.id,
+              tag_id: tag.id,
+              inserted_at: now
+            }
+
+          _ ->
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
 
     if tag_entries != [] do
       Repo.insert_all("article_tags", tag_entries)
@@ -470,6 +485,7 @@ defmodule Realworld.Blog do
         %Tag{}
         |> Tag.changeset(%{name: name})
         |> Repo.insert()
+
       tag ->
         {:ok, tag}
     end
@@ -505,23 +521,24 @@ defmodule Realworld.Blog do
   Uses a single query with lateral joins to avoid N+1 problems.
   """
   def with_stats(query, user) do
-    favorites_count_query = 
+    favorites_count_query =
       from f in ArticleFavorite,
-      where: f.article_id == parent_as(:article).id,
-      select: %{count: count(f.article_id)}
-    
-    user_favorited_query = case user do
-      %User{id: user_id} ->
-        from f in ArticleFavorite,
-        where: f.article_id == parent_as(:article).id and f.user_id == ^user_id,
-        select: %{favorited: count(f.article_id) > 0}
-      
-      nil ->
-        from f in ArticleFavorite,
-        where: false,
-        select: %{favorited: false}
-    end
-    
+        where: f.article_id == parent_as(:article).id,
+        select: %{count: count(f.article_id)}
+
+    user_favorited_query =
+      case user do
+        %User{id: user_id} ->
+          from f in ArticleFavorite,
+            where: f.article_id == parent_as(:article).id and f.user_id == ^user_id,
+            select: %{favorited: count(f.article_id) > 0}
+
+        nil ->
+          from f in ArticleFavorite,
+            where: false,
+            select: %{favorited: false}
+      end
+
     from a in query,
       as: :article,
       left_lateral_join: fc in subquery(favorites_count_query),

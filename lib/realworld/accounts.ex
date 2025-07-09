@@ -257,12 +257,12 @@ defmodule Realworld.Accounts do
 
   @doc """
   Updates the user's time zone.
-  
+
   ## Examples
-  
+
       iex> update_user_time_zone(user, "America/New_York")
       {:ok, %User{}}
-  
+
   """
   def update_user_time_zone(%User{} = user, time_zone) when is_binary(time_zone) do
     user
@@ -460,7 +460,9 @@ defmodule Realworld.Accounts do
   """
   def list_following(%User{id: user_id}) do
     User
-    |> join(:inner, [u], f in UserFollow, on: f.following_id == u.id and f.follower_id == ^user_id)
+    |> join(:inner, [u], f in UserFollow,
+      on: f.following_id == u.id and f.follower_id == ^user_id
+    )
     |> Repo.all()
   end
 
@@ -469,7 +471,9 @@ defmodule Realworld.Accounts do
   """
   def list_followers(%User{id: user_id}) do
     User
-    |> join(:inner, [u], f in UserFollow, on: f.follower_id == u.id and f.following_id == ^user_id)
+    |> join(:inner, [u], f in UserFollow,
+      on: f.follower_id == u.id and f.following_id == ^user_id
+    )
     |> Repo.all()
   end
 end

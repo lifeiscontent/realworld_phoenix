@@ -12,9 +12,12 @@ defmodule Realworld.Repo.Migrations.CreateTags do
 
     # Create join table for articles and tags
     create table(:article_tags, primary_key: false) do
-      add :article_id, references(:articles, on_delete: :delete_all), null: false, primary_key: true
+      add :article_id, references(:articles, on_delete: :delete_all),
+        null: false,
+        primary_key: true
+
       add :tag_id, references(:tags, on_delete: :delete_all), null: false, primary_key: true
-      
+
       timestamps(type: :utc_datetime, updated_at: false)
     end
 

@@ -35,7 +35,12 @@ defmodule Realworld.BlogTest do
 
     test "update_article/2 with valid data updates the article" do
       article = article_fixture()
-      update_attrs = %{status: "some updated status", title: "some updated title", body: "some updated body"}
+
+      update_attrs = %{
+        status: "some updated status",
+        title: "some updated title",
+        body: "some updated body"
+      }
 
       assert {:ok, %Article{} = article} = Blog.update_article(article, update_attrs)
       assert article.status == "some updated status"

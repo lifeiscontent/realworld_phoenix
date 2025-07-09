@@ -89,6 +89,8 @@ defmodule RealworldWeb do
       import Phoenix.HTML
       # Core UI components
       import RealworldWeb.CoreComponents
+      # App-specific UI components
+      import RealworldWeb.AppComponents
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS

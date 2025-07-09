@@ -10,7 +10,7 @@ defmodule RealworldWeb.DateTimeHelpers do
     case DateTime.shift_zone(datetime, timezone) do
       {:ok, local_datetime} ->
         Calendar.strftime(local_datetime, "%B %d, %Y at %I:%M %p")
-      
+
       {:error, _} ->
         # Fallback to UTC if timezone conversion fails
         Calendar.strftime(datetime, "%B %d, %Y at %I:%M %p UTC")

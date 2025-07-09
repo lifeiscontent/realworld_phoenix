@@ -4,7 +4,7 @@ defmodule Realworld.Blog.Comment do
 
   schema "comments" do
     field :content, :string
-    
+
     belongs_to :user, Realworld.Accounts.User
     belongs_to :article, Realworld.Blog.Article
 

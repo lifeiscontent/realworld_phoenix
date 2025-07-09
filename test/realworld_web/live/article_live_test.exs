@@ -5,7 +5,11 @@ defmodule RealworldWeb.ArticleLiveTest do
   import Realworld.BlogFixtures
 
   @create_attrs %{status: "some status", title: "some title", body: "some body"}
-  @update_attrs %{status: "some updated status", title: "some updated title", body: "some updated body"}
+  @update_attrs %{
+    status: "some updated status",
+    title: "some updated title",
+    body: "some updated body"
+  }
   @invalid_attrs %{status: nil, title: nil, body: nil}
 
   defp create_article(_) do

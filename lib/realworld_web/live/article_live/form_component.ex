@@ -24,12 +24,16 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
         <.input field={@form[:user_id]} type="hidden" />
         <.input field={@form[:title]} type="text" label="Title" />
         <.input field={@form[:body]} type="textarea" label="Body" rows="10" />
-        <.input field={@form[:status]} type="select" label="Status" 
-          options={[{"Draft", "draft"}, {"Published", "published"}, {"Archived", "archived"}]} />
-        <.input 
-          name="tags" 
-          type="text" 
-          label="Tags" 
+        <.input
+          field={@form[:status]}
+          type="select"
+          label="Status"
+          options={[{"Draft", "draft"}, {"Published", "published"}, {"Archived", "archived"}]}
+        />
+        <.input
+          name="tags"
+          type="text"
+          label="Tags"
           value={@tag_names}
           placeholder="Comma-separated tags (e.g., elixir, phoenix, tutorial)"
           phx-debounce="300"
@@ -46,7 +50,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
   def update(%{article: article} = assigns, socket) do
     article = Repo.preload(article, :tags)
     tag_names = Enum.map(article.tags, & &1.name) |> Enum.join(", ")
-    
+
     {:ok,
      socket
      |> assign(assigns)
@@ -74,7 +78,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
         # Update tags
         tag_list = parse_tags(tag_names)
         {:ok, article} = Blog.update_article_tags(article, tag_list)
-        
+
         article = Repo.preload(article, [:user, :comments, :tags])
         notify_parent({:saved, article})
 
@@ -90,7 +94,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
 
   defp save_article(socket, :new, article_params, tag_names) do
     current_user = socket.assigns.current_user
-    
+
     case Policies.authorize(:create_article, current_user, article_params) do
       :ok ->
         case Blog.create_article(article_params) do
@@ -98,7 +102,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
             # Update tags
             tag_list = parse_tags(tag_names)
             {:ok, article} = Blog.update_article_tags(article, tag_list)
-            
+
             article = Repo.preload(article, [:user, :comments, :tags])
             notify_parent({:saved, article})
 
@@ -110,14 +114,14 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
           {:error, %Ecto.Changeset{} = changeset} ->
             {:noreply, assign(socket, form: to_form(changeset))}
         end
-        
+
       {:error, :unauthorized} ->
-        changeset = 
+        changeset =
           socket.assigns.article
           |> Blog.change_article(article_params)
           |> Ecto.Changeset.add_error(:user_id, "You can only create articles for yourself")
           |> Map.put(:action, :validate)
-        
+
         {:noreply, assign(socket, form: to_form(changeset))}
     end
   end

@@ -4,8 +4,8 @@ defmodule Realworld.Blog.Tag do
 
   schema "tags" do
     field :name, :string
-    
-    many_to_many :articles, Realworld.Blog.Article, 
+
+    many_to_many :articles, Realworld.Blog.Article,
       join_through: "article_tags",
       on_replace: :delete
 
@@ -18,8 +18,7 @@ defmodule Realworld.Blog.Tag do
     |> cast(attrs, [:name])
     |> validate_required([:name])
     |> validate_length(:name, min: 1, max: 50)
-    |> validate_format(:name, ~r/^[a-zA-Z0-9]+$/, 
-        message: "can only contain letters and numbers")
+    |> validate_format(:name, ~r/^[a-zA-Z0-9]+$/, message: "can only contain letters and numbers")
     |> unique_constraint(:name)
   end
 end

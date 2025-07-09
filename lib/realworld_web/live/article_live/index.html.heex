@@ -1,23 +1,57 @@
 <.header>
-  <%= @page_title %>
+  {@page_title}
   <:actions>
-    <.link navigate={~p"/articles"} class={if @live_action == :index, do: "font-semibold"}>
-      Global Feed
+    <.link :if={Policies.permit?(:create_article, @current_user)} patch={~p"/articles/new"}>
+      <.button>New Article</.button>
     </.link>
-    <%= if @current_user do %>
-      <.link navigate={~p"/following/articles"} class={if @live_action == :following, do: "font-semibold"}>
-        Your Feed
-      </.link>
-      <.link patch={~p"/articles/new"}>
-        <.button>New Article</.button>
-      </.link>
-    <% end %>
   </:actions>
 </.header>
 
-<div 
-  id="articles" 
-  phx-update="stream" 
+<div class="flex items-center gap-6 mb-6 border-b border-gray-200">
+  <.link
+    navigate={~p"/articles"}
+    class={[
+      "py-2 px-1 border-b-2 font-medium text-sm transition-colors",
+      if(@live_action == :index && !@tag,
+        do: "border-blue-500 text-blue-600",
+        else: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+      )
+    ]}
+  >
+    Global Feed
+  </.link>
+  <%= if @current_user do %>
+    <.link
+      navigate={~p"/following/articles"}
+      class={[
+        "py-2 px-1 border-b-2 font-medium text-sm transition-colors",
+        if(@live_action == :following && !@tag,
+          do: "border-blue-500 text-blue-600",
+          else: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+        )
+      ]}
+    >
+      Your Feed
+    </.link>
+  <% end %>
+  <%= if @tag do %>
+    <.link
+      navigate={
+        case @live_action do
+          :following -> ~p"/following/articles?tag=#{@tag}"
+          _ -> ~p"/articles?tag=#{@tag}"
+        end
+      }
+      class="py-2 px-1 border-b-2 font-medium text-sm transition-colors border-blue-500 text-blue-600"
+    >
+      #{@tag}
+    </.link>
+  <% end %>
+</div>
+
+<div
+  id="articles"
+  phx-update="stream"
   phx-viewport-bottom={!@end_of_feed? && JS.push("next-page")}
   class={[
     "mt-8 space-y-6",
@@ -31,87 +65,26 @@
       No articles published yet. Be the first to write one!
     <% end %>
   </p>
-  
-  <article
+
+  <.article_card
     :for={{dom_id, article} <- @streams.articles}
     id={dom_id}
-    class="border rounded-lg p-6 hover:shadow-lg transition-shadow"
-  >
-    <div class="flex items-center mb-4">
-      <%= if article.user.image do %>
-        <img src={article.user.image} alt={article.user.username} class="w-10 h-10 rounded-full mr-3" />
-      <% else %>
-        <div class="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand font-semibold mr-3">
-          <%= String.first(article.user.username) |> String.upcase() %>
-        </div>
-      <% end %>
-      <div>
-        <.link navigate={~p"/profiles/#{article.user.username}"} class="font-semibold hover:underline">
-          <%= article.user.username %>
-        </.link>
-        <div class="text-sm text-gray-500">
-          <%= Calendar.strftime(article.inserted_at, "%B %d, %Y") %>
-        </div>
-      </div>
-    </div>
-    
-    <.link navigate={~p"/articles/#{article.slug}"}>
-      <h2 class="text-2xl font-bold mb-2 hover:text-blue-600"><%= article.title %></h2>
-    </.link>
-    
-    <p class="text-gray-700 mb-4">
-      <%= String.slice(article.body || "", 0, 150) %><%= if String.length(article.body || "") > 150, do: "..." %>
-    </p>
-    
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-1 text-gray-600">
-          <.icon name={if article.favorited, do: "hero-heart-solid", else: "hero-heart"} class="w-5 h-5" />
-          <span><%= article.favorites_count %></span>
-        </div>
-        
-        <div class="flex items-center space-x-1 text-gray-600">
-          <.icon name="hero-chat-bubble-left-right" class="w-5 h-5" />
-          <span><%= length(article.comments) %></span>
-        </div>
-      </div>
-      
-      <div class="flex items-center space-x-2">
-        <%= for tag <- article.tags do %>
-          <.link 
-            navigate={
-              case @live_action do
-                :following -> ~p"/following/articles?tag=#{tag.name}"
-                _ -> ~p"/articles?tag=#{tag.name}"
-              end
-            } 
-            class="text-sm bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
-          >
-            <%= tag.name %>
-          </.link>
-        <% end %>
-        
-        <.link :if={Policies.permit?(:update_article, @current_user, article)} patch={~p"/articles/#{article}/edit"} class="text-sm text-blue-600 hover:underline">
-          Edit
-        </.link>
-        <.link
-          :if={Policies.permit?(:delete_article, @current_user, article)}
-          phx-click={JS.push("delete", value: %{id: article.id}) |> hide("##{dom_id}")}
-          data-confirm="Are you sure?"
-          class="text-sm text-red-600 hover:underline"
-        >
-          Delete
-        </.link>
-      </div>
-    </div>
-  </article>
+    article={article}
+    current_user={@current_user}
+    live_action={@live_action}
+  />
 </div>
 
 <div :if={@end_of_feed? && @page > 1} class="text-center py-10 text-gray-500">
   <p class="text-lg">You've reached the end of the feed</p>
 </div>
 
-<.modal :if={@live_action in [:new, :edit]} id="article-modal" show on_cancel={JS.patch(~p"/articles")}>
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="article-modal"
+  show
+  on_cancel={JS.patch(~p"/articles")}
+>
   <.live_component
     module={RealworldWeb.ArticleLive.FormComponent}
     id={@article.id || :new}

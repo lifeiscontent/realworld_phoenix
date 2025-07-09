@@ -1,20 +1,20 @@
 defmodule RealworldWeb.AuthLive do
   @moduledoc """
   LiveView helpers for authentication and authorization.
-  
+
   Usage in LiveView modules:
-  
+
       use RealworldWeb, :live_view
       on_mount RealworldWeb.AuthLive
-  
+
   Or for specific hooks:
-  
+
       on_mount {RealworldWeb.AuthLive, :require_authenticated_user}
       on_mount {RealworldWeb.AuthLive, :require_admin}
   """
   import Phoenix.LiveView
   import Phoenix.Component
-  
+
   alias Realworld.Accounts
   alias Realworld.Policies
 
@@ -25,7 +25,7 @@ defmodule RealworldWeb.AuthLive do
 
   def on_mount(:require_authenticated_user, _params, session, socket) do
     socket = assign_current_user(socket, session)
-    
+
     if socket.assigns.current_user do
       {:cont, socket}
     else
@@ -40,7 +40,7 @@ defmodule RealworldWeb.AuthLive do
 
   def on_mount(:require_admin, _params, session, socket) do
     socket = assign_current_user(socket, session)
-    
+
     if socket.assigns.current_user && Policies.admin?(socket.assigns.current_user) do
       {:cont, socket}
     else
@@ -74,7 +74,7 @@ defmodule RealworldWeb.AuthLive do
   """
   def authorized?(socket, action, resource \\ nil) do
     user = socket.assigns[:current_user]
-    
+
     case Policies.authorize(action, user, resource) do
       :ok -> true
       {:error, :unauthorized} -> false

@@ -18,7 +18,9 @@ defmodule Realworld.Accounts.UserFollow do
     |> foreign_key_constraint(:follower_id)
     |> foreign_key_constraint(:following_id)
     |> unique_constraint([:follower_id, :following_id])
-    |> check_constraint(:follower_id, name: :cannot_follow_self,
-        message: "cannot follow yourself")
+    |> check_constraint(:follower_id,
+      name: :cannot_follow_self,
+      message: "cannot follow yourself"
+    )
   end
 end
