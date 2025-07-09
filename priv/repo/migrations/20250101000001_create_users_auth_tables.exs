@@ -8,11 +8,18 @@ defmodule Realworld.Repo.Migrations.CreateUsersAuthTables do
       add :email, :citext, null: false
       add :hashed_password, :string, null: false
       add :confirmed_at, :utc_datetime
+      add :role, :string, default: "user", null: false
+      add :time_zone, :string, default: "UTC"
+      add :username, :citext, null: false
+      add :bio, :text
+      add :image, :string
 
       timestamps(type: :utc_datetime)
     end
 
     create unique_index(:users, [:email])
+    create unique_index(:users, [:username])
+    create index(:users, [:role])
 
     create table(:users_tokens) do
       add :user_id, references(:users, on_delete: :delete_all), null: false
