@@ -12,18 +12,6 @@ defmodule Realworld.Blog do
   alias Realworld.Accounts.User
   alias Realworld.Policies
 
-  @doc """
-  Returns the list of articles.
-
-  ## Examples
-
-      iex> list_articles()
-      [%Article{}, ...]
-
-  """
-  def list_articles do
-    Repo.all(Article)
-  end
 
   @doc """
   Returns the list of articles for a specific user.
@@ -408,6 +396,32 @@ defmodule Realworld.Blog do
 
     query
     |> Policies.scope(:list_articles, user)
+    |> with_stats(user)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of all published articles.
+  Ordered by most recent first.
+  """
+  def list_articles(user \\ nil) do
+    Article
+    |> where(status: "published")
+    |> order_by(desc: :inserted_at)
+    |> preload([:user, :tags, :comments])
+    |> with_stats(user)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists articles from users that the current user follows.
+  Uses policy scopes to filter based on following relationships.
+  """
+  def list_following_articles(user) do
+    Article
+    |> Policies.scope(:list_following_articles, user)
+    |> order_by(desc: :inserted_at)
+    |> preload([:user, :tags, :comments])
     |> with_stats(user)
     |> Repo.all()
   end

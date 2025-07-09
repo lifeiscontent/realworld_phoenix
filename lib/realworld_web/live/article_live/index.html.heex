@@ -1,43 +1,96 @@
 <.header>
-  Listing Articles
+  <%= @page_title %>
   <:actions>
-    <.link patch={~p"/articles/new"}>
-      <.button>New Article</.button>
+    <.link navigate={~p"/articles"} class={if @live_action == :index, do: "font-semibold"}>
+      Global Feed
     </.link>
+    <%= if @current_user do %>
+      <.link navigate={~p"/following/articles"} class={if @live_action == :following, do: "font-semibold"}>
+        Your Feed
+      </.link>
+      <.link patch={~p"/articles/new"}>
+        <.button>New Article</.button>
+      </.link>
+    <% end %>
   </:actions>
 </.header>
 
-<.table
-  id="articles"
-  rows={@streams.articles}
-  row_click={fn {_id, article} -> JS.navigate(~p"/articles/#{article}") end}
->
-  <:col :let={{_id, article}} label="Title">{article.title}</:col>
-  <:col :let={{_id, article}} label="Author">{article.user.username}</:col>
-  <:col :let={{_id, article}} label="Body">{article.body}</:col>
-  <:col :let={{_id, article}} label="Status">{article.status}</:col>
-  <:col :let={{_id, article}} label="Comments">{length(article.comments)}</:col>
-  <:col :let={{_id, article}} label="Favorites">
-    <span class="flex items-center gap-1">
-      {if article.favorited, do: "❤️", else: "🤍"}
-      {article.favorites_count}
-    </span>
-  </:col>
-  <:action :let={{_id, article}}>
-    <div class="sr-only">
-      <.link navigate={~p"/articles/#{article}"}>Show</.link>
+<div id="articles" phx-update="stream" class="mt-8 space-y-6">
+  <p :if={@streams.articles == []} class="text-gray-500">
+    <%= if @live_action == :following do %>
+      No articles from people you follow yet. Follow some users to see their articles here!
+    <% else %>
+      No articles published yet. Be the first to write one!
+    <% end %>
+  </p>
+  
+  <article
+    :for={{dom_id, article} <- @streams.articles}
+    id={dom_id}
+    class="border rounded-lg p-6 hover:shadow-lg transition-shadow"
+  >
+    <div class="flex items-center mb-4">
+      <%= if article.user.image do %>
+        <img src={article.user.image} alt={article.user.username} class="w-10 h-10 rounded-full mr-3" />
+      <% else %>
+        <div class="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand font-semibold mr-3">
+          <%= String.first(article.user.username) |> String.upcase() %>
+        </div>
+      <% end %>
+      <div>
+        <.link navigate={~p"/profiles/#{article.user.username}"} class="font-semibold hover:underline">
+          <%= article.user.username %>
+        </.link>
+        <div class="text-sm text-gray-500">
+          <%= Calendar.strftime(article.inserted_at, "%B %d, %Y") %>
+        </div>
+      </div>
     </div>
-    <.link patch={~p"/articles/#{article}/edit"}>Edit</.link>
-  </:action>
-  <:action :let={{id, article}}>
-    <.link
-      phx-click={JS.push("delete", value: %{id: article.id}) |> hide("##{id}")}
-      data-confirm="Are you sure?"
-    >
-      Delete
+    
+    <.link navigate={~p"/articles/#{article.slug}"}>
+      <h2 class="text-2xl font-bold mb-2 hover:text-blue-600"><%= article.title %></h2>
     </.link>
-  </:action>
-</.table>
+    
+    <p class="text-gray-700 mb-4">
+      <%= String.slice(article.body || "", 0, 150) %><%= if String.length(article.body || "") > 150, do: "..." %>
+    </p>
+    
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-1 text-gray-600">
+          <.icon name={if article.favorited, do: "hero-heart-solid", else: "hero-heart"} class="w-5 h-5" />
+          <span><%= article.favorites_count %></span>
+        </div>
+        
+        <div class="flex items-center space-x-1 text-gray-600">
+          <.icon name="hero-chat-bubble-left-right" class="w-5 h-5" />
+          <span><%= length(article.comments) %></span>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-2">
+        <%= for tag <- article.tags do %>
+          <.link navigate={~p"/articles?tag=#{tag.name}"} class="text-sm bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">
+            <%= tag.name %>
+          </.link>
+        <% end %>
+        
+        <%= if @current_user && (@current_user.id == article.user_id || @current_user.role == "admin") do %>
+          <.link patch={~p"/articles/#{article}/edit"} class="text-sm text-blue-600 hover:underline">
+            Edit
+          </.link>
+          <.link
+            phx-click={JS.push("delete", value: %{id: article.id}) |> hide("##{dom_id}")}
+            data-confirm="Are you sure?"
+            class="text-sm text-red-600 hover:underline"
+          >
+            Delete
+          </.link>
+        <% end %>
+      </div>
+    </div>
+  </article>
+</div>
 
 <.modal :if={@live_action in [:new, :edit]} id="article-modal" show on_cancel={JS.patch(~p"/articles")}>
   <.live_component

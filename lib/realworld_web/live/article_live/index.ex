@@ -9,26 +9,32 @@ defmodule RealworldWeb.ArticleLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    current_user = socket.assigns.current_user
-    
-    case Policies.authorize(:list_articles, current_user, nil) do
-      :ok ->
-        articles = Blog.list_user_visible_articles(current_user)
-        {:ok, stream(socket, :articles, articles)}
-      
-      {:error, :unauthorized} ->
-        socket =
-          socket
-          |> put_flash(:error, "You are not authorized to view articles.")
-          |> redirect(to: "/")
-        
-        {:ok, socket}
-    end
+    {:ok, socket}
   end
 
   @impl true
   def handle_params(params, _url, socket) do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :index, _params) do
+    # Global feed - all published articles
+    articles = Blog.list_articles(socket.assigns.current_user)
+    
+    socket
+    |> assign(:page_title, "Global Feed")
+    |> stream(:articles, articles)
+    |> assign(:article, nil)
+  end
+
+  defp apply_action(socket, :following, _params) do
+    # Following feed - articles from followed users
+    articles = Blog.list_following_articles(socket.assigns.current_user)
+    
+    socket
+    |> assign(:page_title, "Following")
+    |> stream(:articles, articles)
+    |> assign(:article, nil)
   end
 
   defp apply_action(socket, :edit, %{"slug" => slug}) do
@@ -62,12 +68,6 @@ defmodule RealworldWeb.ArticleLive.Index do
         |> put_flash(:error, "You are not authorized to create articles.")
         |> push_navigate(to: ~p"/articles")
     end
-  end
-
-  defp apply_action(socket, :index, _params) do
-    socket
-    |> assign(:page_title, "Listing Articles")
-    |> assign(:article, nil)
   end
 
   @impl true

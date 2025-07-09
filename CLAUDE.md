@@ -144,6 +144,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Memory Management
 - Always check docs first before working on anything new, once you've checked the docs, update your memories based on how memory works here: https://docs.anthropic.com/en/docs/claude-code/memory
 
+## Documentation First Approach
+- ALWAYS read the official documentation before implementing features
+- DO NOT make up conventions or patterns - use what's documented
+- Check Phoenix, LiveView, and Ecto docs for proper patterns
+- Update CLAUDE.md with learned patterns from documentation
+
 ## Bodyguard-like Authorization Pattern
 - Use `Policies.permit?/3` for boolean authorization checks instead of custom functions
 - `permit?` is a wrapper around `authorize` that returns true/false

@@ -66,7 +66,6 @@ defmodule RealworldWeb.Router do
     live "/users/settings", UserSettingsLive.Edit, :edit
     get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
 
-    live "/articles", ArticleLive.Index, :index
     live "/articles/new", ArticleLive.Index, :new
     live "/articles/:slug/edit", ArticleLive.Index, :edit
 
@@ -74,6 +73,9 @@ defmodule RealworldWeb.Router do
     live "/articles/:slug/show/edit", ArticleLive.Show, :edit
     
     live "/profiles/:username", ProfileLive.Show, :show
+    
+    # Following feed requires authentication
+    live "/following/articles", ArticleLive.Index, :following
   end
 
   scope "/", RealworldWeb do
@@ -84,5 +86,8 @@ defmodule RealworldWeb.Router do
     post "/users/confirm", UserConfirmationController, :create
     get "/users/confirm/:token", UserConfirmationController, :edit
     post "/users/confirm/:token", UserConfirmationController, :update
+    
+    # Global feed accessible to all
+    live "/articles", ArticleLive.Index, :index
   end
 end

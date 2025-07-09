@@ -126,6 +126,21 @@ defmodule Realworld.Policies do
     from a in query, where: a.status == "published"
   end
   
+  # Following articles scope - articles from followed users
+  def scope(query, :list_following_articles, %User{id: user_id}, _params) do
+    import Ecto.Query
+    from a in query,
+      join: uf in Realworld.Accounts.UserFollow,
+      on: uf.following_id == a.user_id and uf.follower_id == ^user_id,
+      where: a.status == "published"
+  end
+  
+  def scope(query, :list_following_articles, nil, _params) do
+    # Unauthenticated users see no following articles
+    import Ecto.Query
+    from q in query, where: false
+  end
+  
   # Default scope (deny all)
   def scope(query, _action, _user, _params) do
     import Ecto.Query
