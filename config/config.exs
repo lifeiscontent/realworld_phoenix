@@ -20,7 +20,7 @@ config :realworld, RealworldWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Realworld.PubSub,
-  live_view: [signing_salt: "ydbsocE2"]
+  live_view: [signing_salt: "nsyAAieb"]
 
 # Configures the mailer
 #
@@ -60,6 +60,9 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Configure timezone database
+config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

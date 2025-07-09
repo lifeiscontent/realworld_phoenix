@@ -16,14 +16,14 @@ config :realworld, Realworld.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-# Binding to loopback ipv4 address prevents access from other machines.
 config :realworld, RealworldWeb.Endpoint,
+  # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "CWvx8dJFUvqhsyIBIxVuN/h4OIcxA6pEyoNONYRgH2IKphCtF/pigjVcF4TmXceO",
+  secret_key_base: "ZQggyynXPEF9eEUMvqlkFArPwhjbAUjlNP520M7GaNoOF9zV10HtjS0VrD7TQfFb",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:realworld, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:realworld, ~w(--watch)]}
