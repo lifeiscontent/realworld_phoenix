@@ -10,6 +10,7 @@ defmodule Realworld.Blog do
   alias Realworld.Blog.ArticleFavorite
   alias Realworld.Blog.Tag
   alias Realworld.Accounts.User
+  alias Realworld.Policies
 
   @doc """
   Returns the list of articles.
@@ -33,38 +34,26 @@ defmodule Realworld.Blog do
       [%Article{}, ...]
 
   """
-  def list_user_articles(%{id: user_id}) do
+  def list_user_articles(%{id: user_id}, current_user \\ nil) do
     Article
     |> where(user_id: ^user_id)
     |> order_by(desc: :inserted_at)
     |> preload([:user, :comments, :tags])
+    |> with_stats(current_user)
     |> Repo.all()
   end
 
   @doc """
   Returns the list of articles visible to a specific user.
-  
-  - Admins can see all articles
-  - Authenticated users can see their own articles and published articles
-  - Unauthenticated users can only see published articles
+
+  Uses policy scopes to filter articles based on user permissions.
   """
   def list_user_visible_articles(user) do
     Article
-    |> filter_by_user_visibility(user)
-    |> preload(:user)
+    |> Policies.scope(:list_articles, user)
+    |> preload([:user, :comments, :tags])
+    |> with_stats(user)
     |> Repo.all()
-    |> Repo.preload([:comments, :tags])
-  end
-
-  defp filter_by_user_visibility(query, %User{role: "admin"}), do: query
-  
-  defp filter_by_user_visibility(query, %User{id: user_id}) do
-    from a in query,
-      where: a.user_id == ^user_id or a.status == "published"
-  end
-  
-  defp filter_by_user_visibility(query, nil) do
-    from a in query, where: a.status == "published"
   end
 
   @doc """
@@ -105,6 +94,17 @@ defmodule Realworld.Blog do
     Article
     |> Repo.get_by!(slug: slug)
     |> Repo.preload([:user, :tags])
+  end
+
+  @doc """
+  Gets a single article by slug with stats for the given user.
+  """
+  def get_article_by_slug_with_stats!(slug, user) do
+    Article
+    |> where(slug: ^slug)
+    |> preload([:user, :tags])
+    |> with_stats(user)
+    |> Repo.one!()
   end
 
   @doc """
@@ -300,46 +300,43 @@ defmodule Realworld.Blog do
   Unfavorites an article for a user.
   """
   def unfavorite_article(%User{id: user_id}, %Article{id: article_id}) do
-    query = from f in ArticleFavorite,
-      where: f.user_id == ^user_id and f.article_id == ^article_id
+    %ArticleFavorite{user_id: user_id, article_id: article_id}
+    |> Repo.delete()
+  end
+
+
+  @doc """
+  Efficiently loads articles with favorites count and favorited status for a user.
+  Uses a single query with lateral joins to avoid N+1 problems.
+  """
+  def with_stats(query, user) do
+    favorites_count_query = 
+      from f in ArticleFavorite,
+      where: f.article_id == parent_as(:article).id,
+      select: %{count: count(f.article_id)}
     
-    case Repo.delete_all(query) do
-      {0, _} -> {:error, :not_found}
-      {_, _} -> {:ok, get_article!(article_id)}
+    user_favorited_query = case user do
+      %User{id: user_id} ->
+        from f in ArticleFavorite,
+        where: f.article_id == parent_as(:article).id and f.user_id == ^user_id,
+        select: %{favorited: count(f.article_id) > 0}
+      
+      nil ->
+        from f in ArticleFavorite,
+        where: false,
+        select: %{favorited: false}
     end
-  end
-
-  @doc """
-  Checks if a user has favorited an article.
-  """
-  def favorited?(%User{id: user_id}, %Article{id: article_id}) do
-    ArticleFavorite
-    |> where([f], f.user_id == ^user_id and f.article_id == ^article_id)
-    |> Repo.exists?()
-  end
-
-  def favorited?(nil, _article), do: false
-
-  @doc """
-  Gets the favorites count for an article.
-  """
-  def get_favorites_count(%Article{id: article_id}) do
-    ArticleFavorite
-    |> where([f], f.article_id == ^article_id)
-    |> Repo.aggregate(:count)
-  end
-
-  @doc """
-  Preloads article with favorites count and favorited status for a user.
-  """
-  def load_article_stats(%Article{} = article, user) do
-    article
-    |> Map.put(:favorites_count, get_favorites_count(article))
-    |> Map.put(:favorited, favorited?(user, article))
-  end
-
-  def load_article_stats(articles, user) when is_list(articles) do
-    Enum.map(articles, &load_article_stats(&1, user))
+    
+    from a in query,
+      as: :article,
+      left_lateral_join: fc in subquery(favorites_count_query),
+      on: true,
+      left_lateral_join: uf in subquery(user_favorited_query),
+      on: true,
+      select_merge: %{
+        favorites_count: coalesce(fc.count, 0),
+        favorited: coalesce(uf.favorited, false)
+      }
   end
 
   @doc """
@@ -356,7 +353,7 @@ defmodule Realworld.Blog do
   """
   def get_or_create_tag(name) do
     name = String.trim(name)
-    
+
     case Repo.get_by(Tag, name: name) do
       nil ->
         %Tag{}
@@ -375,13 +372,13 @@ defmodule Realworld.Blog do
     # Delete existing tags
     from(at in "article_tags", where: at.article_id == ^article.id)
     |> Repo.delete_all()
-    
+
     # Insert new tags
     now = DateTime.utc_now() |> DateTime.truncate(:second)
-    
+
     tag_entries = Enum.map(tag_names, fn name ->
       case get_or_create_tag(name) do
-        {:ok, tag} -> 
+        {:ok, tag} ->
           %{
             article_id: article.id,
             tag_id: tag.id,
@@ -391,11 +388,11 @@ defmodule Realworld.Blog do
       end
     end)
     |> Enum.reject(&is_nil/1)
-    
+
     if tag_entries != [] do
       Repo.insert_all("article_tags", tag_entries)
     end
-    
+
     {:ok, Repo.preload(article, :tags, force: true)}
   end
 
@@ -407,12 +404,11 @@ defmodule Realworld.Blog do
       join: t in assoc(a, :tags),
       where: t.name == ^tag_name,
       distinct: true,
-      preload: [:user, :tags]
+      preload: [:user, :tags, :comments]
 
     query
-    |> filter_by_user_visibility(user)
+    |> Policies.scope(:list_articles, user)
+    |> with_stats(user)
     |> Repo.all()
-    |> Repo.preload(:comments)
-    |> load_article_stats(user)
   end
 end

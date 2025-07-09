@@ -13,10 +13,7 @@ defmodule RealworldWeb.ArticleLive.Index do
     
     case Policies.authorize(:list_articles, current_user, nil) do
       :ok ->
-        articles = 
-          current_user
-          |> Blog.list_user_visible_articles()
-          |> Blog.load_article_stats(current_user)
+        articles = Blog.list_user_visible_articles(current_user)
         {:ok, stream(socket, :articles, articles)}
       
       {:error, :unauthorized} ->

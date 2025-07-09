@@ -4,8 +4,8 @@ defmodule Realworld.Accounts.UserFollow do
 
   @primary_key false
   schema "user_follows" do
-    belongs_to :follower, Realworld.Accounts.User
-    belongs_to :following, Realworld.Accounts.User
+    belongs_to :follower, Realworld.Accounts.User, primary_key: true
+    belongs_to :following, Realworld.Accounts.User, primary_key: true
 
     timestamps(updated_at: false, type: :utc_datetime)
   end

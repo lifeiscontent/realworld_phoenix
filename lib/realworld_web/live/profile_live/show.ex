@@ -21,10 +21,7 @@ defmodule RealworldWeb.ProfileLive.Show do
 
       user ->
         current_user = socket.assigns.current_user
-        articles = 
-          user
-          |> Blog.list_user_articles()
-          |> Blog.load_article_stats(current_user)
+        articles = Blog.list_user_articles(user, current_user)
         
         following = current_user && Accounts.following?(current_user, user)
         followers_count = Accounts.get_followers_count(user)

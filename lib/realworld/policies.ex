@@ -94,4 +94,41 @@ defmodule Realworld.Policies do
   def owns?(%User{id: user_id}, %{user_id: user_id}), do: true
   def owns?(%User{id: user_id}, %{owner_id: user_id}), do: true
   def owns?(_user, _resource), do: false
+
+  @doc """
+  Scopes a query to only include resources visible to the given user.
+  Following Bodyguard's pattern for query-level authorization.
+  
+  ## Examples
+  
+      iex> Article |> Policies.scope(:list_articles, user) |> Repo.all()
+      [%Article{}, ...]
+      
+  """
+  def scope(query, action, user, params \\ %{})
+  
+  # Article scopes
+  def scope(query, :list_articles, %User{role: "admin"}, _params) do
+    # Admins can see all articles
+    query
+  end
+  
+  def scope(query, :list_articles, %User{id: user_id}, _params) do
+    # Authenticated users can see their own articles and published articles
+    import Ecto.Query
+    from a in query,
+      where: a.user_id == ^user_id or a.status == "published"
+  end
+  
+  def scope(query, :list_articles, nil, _params) do
+    # Unauthenticated users can only see published articles
+    import Ecto.Query
+    from a in query, where: a.status == "published"
+  end
+  
+  # Default scope (deny all)
+  def scope(query, _action, _user, _params) do
+    import Ecto.Query
+    from q in query, where: false
+  end
 end

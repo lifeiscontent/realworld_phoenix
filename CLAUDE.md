@@ -69,6 +69,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Users can manage their own resources
 - Article visibility rules: draft (owner only), published (public), archived (owner/admin)
 
+### Query Scoping (Bodyguard-style)
+- Use `Policies.scope/3` or `Policies.scope/4` to filter queries based on user permissions
+- Implements authorization at the query level to ensure users only see data they're authorized to access
+- Example: `Article |> Policies.scope(:list_articles, user) |> Repo.all()`
+- Scopes are defined in the Policies module alongside other authorization rules
+- This approach keeps authorization logic centralized and reusable across contexts
+
 ### Authorization in Controllers
 - Use `RealworldWeb.Plugs.Authorize` plug
 - Example: `plug RealworldWeb.Plugs.Authorize, :admin when action in [:index, :delete]`
@@ -206,8 +213,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Article slugs using Phoenix.Param (SEO-friendly URLs)
 
 ### Pending Features (LiveView implementation):
-- Following system
-- Article favorites/likes
-- Tags system
 - Feed functionality (global and personalized)
 - Pagination support
+
+## Efficient Data Loading with Ecto
+
+### Loading Aggregates and Virtual Fields
+- Use lateral joins with subqueries to avoid N+1 queries when loading counts and computed fields
+- Define virtual fields in schemas for data that isn't stored in the database
+- Use `with_stats/2` pattern to efficiently load articles with favorites count and favorited status
+- Example implementation:
+  ```elixir
+  def with_stats(query, user) do
+    favorites_count_query = 
+      from f in ArticleFavorite,
+      where: f.article_id == parent_as(:article).id,
+      select: %{count: count(f.article_id)}
+    
+    from a in query,
+      as: :article,
+      left_lateral_join: fc in subquery(favorites_count_query),
+      on: true,
+      select_merge: %{
+        favorites_count: coalesce(fc.count, 0)
+      }
+  end
+  ```
+- This approach loads all data in a single query instead of N+1 queries
+
+## Code Management Memories
+- never keep stuff for backwards compatibility unless I tell you otherwise

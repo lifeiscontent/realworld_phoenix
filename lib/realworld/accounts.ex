@@ -415,23 +415,14 @@ defmodule Realworld.Accounts do
     %UserFollow{}
     |> UserFollow.changeset(%{follower_id: follower_id, following_id: following_id})
     |> Repo.insert()
-    |> case do
-      {:ok, _} -> {:ok, get_user!(following_id)}
-      {:error, changeset} -> {:error, changeset}
-    end
   end
 
   @doc """
   Unfollows a user.
   """
   def unfollow_user(%User{id: follower_id}, %User{id: following_id}) do
-    query = from f in UserFollow,
-      where: f.follower_id == ^follower_id and f.following_id == ^following_id
-    
-    case Repo.delete_all(query) do
-      {0, _} -> {:error, :not_found}
-      {_, _} -> {:ok, get_user!(following_id)}
-    end
+    %UserFollow{follower_id: follower_id, following_id: following_id}
+    |> Repo.delete()
   end
 
   @doc """

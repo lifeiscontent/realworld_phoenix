@@ -4,8 +4,8 @@ defmodule Realworld.Blog.ArticleTag do
 
   @primary_key false
   schema "article_tags" do
-    belongs_to :article, Realworld.Blog.Article
-    belongs_to :tag, Realworld.Blog.Tag
+    belongs_to :article, Realworld.Blog.Article, primary_key: true
+    belongs_to :tag, Realworld.Blog.Tag, primary_key: true
 
     timestamps(updated_at: false, type: :utc_datetime)
   end

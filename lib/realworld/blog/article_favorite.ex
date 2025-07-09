@@ -4,8 +4,8 @@ defmodule Realworld.Blog.ArticleFavorite do
 
   @primary_key false
   schema "article_favorites" do
-    belongs_to :user, Realworld.Accounts.User
-    belongs_to :article, Realworld.Blog.Article
+    belongs_to :user, Realworld.Accounts.User, primary_key: true
+    belongs_to :article, Realworld.Blog.Article, primary_key: true
 
     timestamps(updated_at: false, type: :utc_datetime)
   end
