@@ -143,6 +143,24 @@ defmodule Realworld.Policies do
     from a in query, where: a.status == "published"
   end
   
+  # User articles scope - all articles for the author, only published for others
+  def scope(query, :list_user_articles, %User{id: current_user_id}, %{user_id: profile_user_id}) do
+    import Ecto.Query
+    if current_user_id == profile_user_id do
+      # User viewing their own profile sees all their articles
+      from a in query, where: a.user_id == ^profile_user_id
+    else
+      # Other users only see published articles
+      from a in query, where: a.user_id == ^profile_user_id and a.status == "published"
+    end
+  end
+  
+  def scope(query, :list_user_articles, nil, %{user_id: profile_user_id}) do
+    # Unauthenticated users only see published articles
+    import Ecto.Query
+    from a in query, where: a.user_id == ^profile_user_id and a.status == "published"
+  end
+  
   # Following articles scope - articles from followed users
   def scope(query, :list_following_articles, %User{id: user_id}, _params) do
     import Ecto.Query

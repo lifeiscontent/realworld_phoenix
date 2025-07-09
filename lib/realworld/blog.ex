@@ -9,22 +9,66 @@ defmodule Realworld.Blog do
   alias Realworld.Blog.Article
   alias Realworld.Blog.ArticleFavorite
   alias Realworld.Blog.Tag
+  alias Realworld.Blog.Comment
   alias Realworld.Accounts.User
   alias Realworld.Policies
 
+  # =====================================
+  # Article Functions
+  # =====================================
+
+  @doc """
+  Returns the list of all published articles.
+  Ordered by most recent first.
+
+  ## Options
+
+    * `:after` - cursor for pagination (article ID)
+    * `:limit` - number of articles to return (default: 10)
+
+  """
+  def list_articles(user \\ nil, opts \\ []) do
+    after_cursor = opts[:after]
+    limit = opts[:limit] || 10
+
+    query = Article
+    |> where(status: "published")
+    |> order_by(desc: :inserted_at, desc: :id)
+    |> limit(^limit)
+    |> preload([:user, :tags, :comments])
+
+    query = if after_cursor do
+      # Get the cursor article to compare timestamps
+      cursor_article = Repo.get!(Article, after_cursor)
+
+      from a in query,
+        where: a.inserted_at < ^cursor_article.inserted_at or 
+               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+    else
+      query
+    end
+
+    query
+    |> with_stats(user)
+    |> Repo.all()
+  end
 
   @doc """
   Returns the list of articles for a specific user.
 
+  Uses policy scope to show:
+  - All articles if viewing own profile
+  - Only published articles if viewing someone else's profile
+
   ## Examples
 
-      iex> list_user_articles(user)
+      iex> list_user_articles(user, current_user)
       [%Article{}, ...]
 
   """
   def list_user_articles(%{id: user_id}, current_user \\ nil) do
     Article
-    |> where(user_id: ^user_id)
+    |> Policies.scope(:list_user_articles, current_user, %{user_id: user_id})
     |> order_by(desc: :inserted_at)
     |> preload([:user, :comments, :tags])
     |> with_stats(current_user)
@@ -32,14 +76,111 @@ defmodule Realworld.Blog do
   end
 
   @doc """
-  Returns the list of articles visible to a specific user.
+  Lists articles from users that the current user follows.
+  Uses policy scopes to filter based on following relationships.
 
-  Uses policy scopes to filter articles based on user permissions.
+  ## Options
+
+    * `:after` - cursor for pagination (article ID)
+    * `:limit` - number of articles to return (default: 10)
+
   """
-  def list_user_visible_articles(user) do
-    Article
+  def list_following_articles(user, opts \\ []) do
+    after_cursor = opts[:after]
+    limit = opts[:limit] || 10
+
+    query = Article
+    |> Policies.scope(:list_following_articles, user)
+    |> order_by(desc: :inserted_at, desc: :id)
+    |> limit(^limit)
+    |> preload([:user, :tags, :comments])
+
+    query = if after_cursor do
+      # Get the cursor article to compare timestamps
+      cursor_article = Repo.get!(Article, after_cursor)
+
+      from a in query,
+        where: a.inserted_at < ^cursor_article.inserted_at or 
+               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+    else
+      query
+    end
+
+    query
+    |> with_stats(user)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists articles by tag.
+
+  ## Options
+
+    * `:after` - cursor for pagination (article ID)
+    * `:limit` - number of articles to return (default: 10)
+  """
+  def list_articles_by_tag(tag_name, user, opts \\ []) do
+    after_cursor = opts[:after]
+    limit = opts[:limit] || 10
+
+    query = from a in Article,
+      join: t in assoc(a, :tags),
+      where: t.name == ^tag_name,
+      distinct: true,
+      order_by: [desc: a.inserted_at, desc: a.id],
+      limit: ^limit,
+      preload: [:user, :tags, :comments]
+
+    query = if after_cursor do
+      # Get the cursor article to compare timestamps
+      cursor_article = Repo.get!(Article, after_cursor)
+
+      from a in query,
+        where: a.inserted_at < ^cursor_article.inserted_at or 
+               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+    else
+      query
+    end
+
+    query
     |> Policies.scope(:list_articles, user)
-    |> preload([:user, :comments, :tags])
+    |> with_stats(user)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists articles from followed users filtered by tag.
+
+  ## Options
+
+    * `:after` - cursor for pagination (article ID)
+    * `:limit` - number of articles to return (default: 10)
+  """
+  def list_following_articles_by_tag(tag_name, user, opts \\ []) do
+    after_cursor = opts[:after]
+    limit = opts[:limit] || 10
+
+    query = Article
+    |> Policies.scope(:list_following_articles, user)
+    |> join(:inner, [a, ...], t in assoc(a, :tags))
+    |> where([a, _uf, t], t.name == ^tag_name)
+    |> distinct(true)
+    |> order_by([a], desc: a.inserted_at, desc: a.id)
+    |> limit(^limit)
+    |> preload([:user, :tags, :comments])
+
+    query = if after_cursor do
+      # Get the cursor article to compare timestamps
+      cursor_article = Repo.get!(Article, after_cursor)
+
+      from a in query,
+        where: a.inserted_at < ^cursor_article.inserted_at or 
+               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
+    else
+      query
+    end
+
+    query
     |> with_stats(user)
     |> Repo.all()
   end
@@ -160,7 +301,41 @@ defmodule Realworld.Blog do
     Article.changeset(article, attrs)
   end
 
-  alias Realworld.Blog.Comment
+  @doc """
+  Associates tags with an article.
+  Tags should be provided as a list of tag names.
+  """
+  def update_article_tags(%Article{} = article, tag_names) when is_list(tag_names) do
+    # Delete existing tags
+    from(at in "article_tags", where: at.article_id == ^article.id)
+    |> Repo.delete_all()
+
+    # Insert new tags
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    tag_entries = Enum.map(tag_names, fn name ->
+      case get_or_create_tag(name) do
+        {:ok, tag} ->
+          %{
+            article_id: article.id,
+            tag_id: tag.id,
+            inserted_at: now
+          }
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+
+    if tag_entries != [] do
+      Repo.insert_all("article_tags", tag_entries)
+    end
+
+    {:ok, Repo.preload(article, :tags, force: true)}
+  end
+
+  # =====================================
+  # Comment Functions
+  # =====================================
 
   @doc """
   Returns the list of comments.
@@ -271,6 +446,39 @@ defmodule Realworld.Blog do
     Comment.changeset(comment, attrs)
   end
 
+  # =====================================
+  # Tag Functions
+  # =====================================
+
+  @doc """
+  Lists all tags.
+  """
+  def list_tags do
+    Tag
+    |> order_by(:name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets or creates a tag by name.
+  """
+  def get_or_create_tag(name) do
+    name = String.trim(name)
+
+    case Repo.get_by(Tag, name: name) do
+      nil ->
+        %Tag{}
+        |> Tag.changeset(%{name: name})
+        |> Repo.insert()
+      tag ->
+        {:ok, tag}
+    end
+  end
+
+  # =====================================
+  # ArticleFavorite Functions
+  # =====================================
+
   @doc """
   Favorites an article for a user.
   """
@@ -278,10 +486,6 @@ defmodule Realworld.Blog do
     %ArticleFavorite{}
     |> ArticleFavorite.changeset(%{user_id: user_id, article_id: article_id})
     |> Repo.insert()
-    |> case do
-      {:ok, _} -> {:ok, get_article!(article_id)}
-      {:error, changeset} -> {:error, changeset}
-    end
   end
 
   @doc """
@@ -292,6 +496,9 @@ defmodule Realworld.Blog do
     |> Repo.delete()
   end
 
+  # =====================================
+  # Helper Functions
+  # =====================================
 
   @doc """
   Efficiently loads articles with favorites count and favorited status for a user.
@@ -325,208 +532,5 @@ defmodule Realworld.Blog do
         favorites_count: coalesce(fc.count, 0),
         favorited: coalesce(uf.favorited, false)
       }
-  end
-
-  @doc """
-  Lists all tags.
-  """
-  def list_tags do
-    Tag
-    |> order_by(:name)
-    |> Repo.all()
-  end
-
-  @doc """
-  Gets or creates a tag by name.
-  """
-  def get_or_create_tag(name) do
-    name = String.trim(name)
-
-    case Repo.get_by(Tag, name: name) do
-      nil ->
-        %Tag{}
-        |> Tag.changeset(%{name: name})
-        |> Repo.insert()
-      tag ->
-        {:ok, tag}
-    end
-  end
-
-  @doc """
-  Associates tags with an article.
-  Tags should be provided as a list of tag names.
-  """
-  def update_article_tags(%Article{} = article, tag_names) when is_list(tag_names) do
-    # Delete existing tags
-    from(at in "article_tags", where: at.article_id == ^article.id)
-    |> Repo.delete_all()
-
-    # Insert new tags
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    tag_entries = Enum.map(tag_names, fn name ->
-      case get_or_create_tag(name) do
-        {:ok, tag} ->
-          %{
-            article_id: article.id,
-            tag_id: tag.id,
-            inserted_at: now
-          }
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
-
-    if tag_entries != [] do
-      Repo.insert_all("article_tags", tag_entries)
-    end
-
-    {:ok, Repo.preload(article, :tags, force: true)}
-  end
-
-  @doc """
-  Lists articles by tag.
-  
-  ## Options
-  
-    * `:after` - cursor for pagination (article ID)
-    * `:limit` - number of articles to return (default: 10)
-  """
-  def list_articles_by_tag(tag_name, user, opts \\ []) do
-    after_cursor = opts[:after]
-    limit = opts[:limit] || 10
-    
-    query = from a in Article,
-      join: t in assoc(a, :tags),
-      where: t.name == ^tag_name,
-      distinct: true,
-      order_by: [desc: a.inserted_at, desc: a.id],
-      limit: ^limit,
-      preload: [:user, :tags, :comments]
-    
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
-      
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
-
-    query
-    |> Policies.scope(:list_articles, user)
-    |> with_stats(user)
-    |> Repo.all()
-  end
-
-  @doc """
-  Returns the list of all published articles.
-  Ordered by most recent first.
-  
-  ## Options
-  
-    * `:after` - cursor for pagination (article ID)
-    * `:limit` - number of articles to return (default: 10)
-  
-  """
-  def list_articles(user \\ nil, opts \\ []) do
-    after_cursor = opts[:after]
-    limit = opts[:limit] || 10
-    
-    query = Article
-    |> where(status: "published")
-    |> order_by(desc: :inserted_at, desc: :id)
-    |> limit(^limit)
-    |> preload([:user, :tags, :comments])
-    
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
-      
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
-    
-    query
-    |> with_stats(user)
-    |> Repo.all()
-  end
-
-  @doc """
-  Lists articles from users that the current user follows.
-  Uses policy scopes to filter based on following relationships.
-  
-  ## Options
-  
-    * `:after` - cursor for pagination (article ID)
-    * `:limit` - number of articles to return (default: 10)
-  
-  """
-  def list_following_articles(user, opts \\ []) do
-    after_cursor = opts[:after]
-    limit = opts[:limit] || 10
-    
-    query = Article
-    |> Policies.scope(:list_following_articles, user)
-    |> order_by(desc: :inserted_at, desc: :id)
-    |> limit(^limit)
-    |> preload([:user, :tags, :comments])
-    
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
-      
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
-    
-    query
-    |> with_stats(user)
-    |> Repo.all()
-  end
-
-  @doc """
-  Lists articles from followed users filtered by tag.
-  
-  ## Options
-  
-    * `:after` - cursor for pagination (article ID)
-    * `:limit` - number of articles to return (default: 10)
-  """
-  def list_following_articles_by_tag(tag_name, user, opts \\ []) do
-    after_cursor = opts[:after]
-    limit = opts[:limit] || 10
-    
-    query = Article
-    |> Policies.scope(:list_following_articles, user)
-    |> join(:inner, [a, ...], t in assoc(a, :tags))
-    |> where([a, _uf, t], t.name == ^tag_name)
-    |> distinct(true)
-    |> order_by([a], desc: a.inserted_at, desc: a.id)
-    |> limit(^limit)
-    |> preload([:user, :tags, :comments])
-    
-    query = if after_cursor do
-      # Get the cursor article to compare timestamps
-      cursor_article = Repo.get!(Article, after_cursor)
-      
-      from a in query,
-        where: a.inserted_at < ^cursor_article.inserted_at or 
-               (a.inserted_at == ^cursor_article.inserted_at and a.id < ^cursor_article.id)
-    else
-      query
-    end
-    
-    query
-    |> with_stats(user)
-    |> Repo.all()
   end
 end
