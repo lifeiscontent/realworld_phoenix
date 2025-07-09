@@ -177,6 +177,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run `git status` to check what needs to be committed
 - Write clear commit messages that describe what was implemented
 
+## Code Cleanup and Refactoring
+- When changing how resources are accessed (e.g., from ID to slug/username), update ALL related code
+- Remove or update functions that become obsolete after refactoring
+- Don't leave unused functions in the codebase unless they're still needed for tests
+- Check for all usages before removing functions using grep/search tools
+- When using Phoenix.Param to change URL parameters, ensure all links and route handlers are updated
+
 ## Current Implementation Status
 ### Completed Features:
 - User authentication (registration, login, logout, password reset)
@@ -184,12 +191,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Articles with CRUD operations and status (draft/published/archived)
 - Comments system with real-time updates via Phoenix PubSub
 - Timezone support for displaying local times
+- User profiles (username, bio, image with file uploads)
+- Article slugs using Phoenix.Param (SEO-friendly URLs)
 
 ### Pending Features (LiveView implementation):
-- User profiles (username, bio, image)
 - Following system
 - Article favorites/likes
 - Tags system
-- Article slugs (currently using numeric IDs)
 - Feed functionality (global and personalized)
 - Pagination support

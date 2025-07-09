@@ -1,7 +1,7 @@
 <.header>
   {@article.title}
   <:subtitle>
-    By <.link navigate={~p"/users/#{@article.user.username}"} class="text-brand hover:underline">@{@article.user.username}</.link> · 
+    By <.link navigate={~p"/profiles/#{@article.user}"} class="text-brand hover:underline">@{@article.user.username}</.link> · 
     Status: {@article.status} · 
     {format_datetime(@article.inserted_at, @time_zone)}
   </:subtitle>
@@ -52,7 +52,7 @@
     <div :for={{dom_id, comment} <- @streams.comments} id={dom_id} class="bg-gray-50 p-4 rounded-lg">
       <div class="flex justify-between items-start">
         <div class="flex items-start space-x-3">
-          <.link navigate={~p"/users/#{comment.user.username}"}>
+          <.link navigate={~p"/profiles/#{comment.user}"}>
             <%= if comment.user.image do %>
               <img src={comment.user.image} alt={comment.user.username} class="w-10 h-10 rounded-full object-cover" />
             <% else %>
@@ -62,7 +62,7 @@
             <% end %>
           </.link>
           <div>
-            <.link navigate={~p"/users/#{comment.user.username}"} class="font-semibold text-brand hover:underline">
+            <.link navigate={~p"/profiles/#{comment.user}"} class="font-semibold text-brand hover:underline">
               @{comment.user.username}
             </.link>
             <span class="text-sm text-gray-600 ml-2">

@@ -73,7 +73,7 @@ defmodule RealworldWeb.Router do
     live "/articles/:slug", ArticleLive.Show, :show
     live "/articles/:slug/show/edit", ArticleLive.Show, :edit
     
-    live "/users/:username", ProfileLive.Show, :show
+    live "/profiles/:username", ProfileLive.Show, :show
   end
 
   scope "/", RealworldWeb do
