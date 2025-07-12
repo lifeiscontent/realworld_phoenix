@@ -1,0 +1,53 @@
+<div class="max-w-4xl mx-auto">
+  <div class="bg-gray-100 rounded-lg p-8 mb-8">
+    <div class="flex items-start space-x-6">
+      <.user_avatar user={@user} size="lg" />
+
+      <div class="flex-1">
+        <h1 class="text-3xl font-bold mb-2">@{@user.username}</h1>
+        <%= if @user.bio do %>
+          <p class="text-gray-700 mb-3">{@user.bio}</p>
+        <% end %>
+
+        <div class="flex items-center gap-4 text-sm text-gray-600">
+          <span>{@followers_count} followers</span>
+          <span>{@following_count} following</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <%= if @can_follow? do %>
+          <.button
+            phx-click="toggle_follow"
+            variant={if @following, do: "secondary", else: "primary"}
+          >
+            {if @following, do: "Unfollow", else: "Follow"}
+          </.button>
+        <% end %>
+
+        <.link
+          :if={Policies.permit?(:update_profile, @current_user, @user)}
+          navigate={~p"/users/settings"}
+        >
+          <.button variant="secondary">Edit Profile</.button>
+        </.link>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="text-2xl font-semibold mb-4">Articles by @{@user.username}</h2>
+
+  <div id="articles" phx-update="stream" class="space-y-4">
+    <p id="articles-empty" class="text-gray-600 only:block hidden">
+      No articles yet.
+    </p>
+    <div :for={{dom_id, article} <- @streams.articles} id={dom_id}>
+      <.article_card
+        article={article}
+        current_user={@current_user}
+        id={dom_id}
+        live_action={@live_action}
+      />
+    </div>
+  </div>
+</div>

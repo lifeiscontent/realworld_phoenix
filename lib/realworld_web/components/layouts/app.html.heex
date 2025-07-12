@@ -1,26 +1,52 @@
 <header class="px-4 sm:px-6 lg:px-8">
-  <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
-    <div class="flex items-center gap-4">
-      <a href="/">
-        <img src={~p"/images/logo.svg"} width="36" />
-      </a>
-      <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
-        v{Application.spec(:phoenix, :vsn)}
-      </p>
+  <div class="flex items-center justify-between border-b border-zinc-100 py-3">
+    <div class="flex items-center gap-6">
+      <.link navigate={~p"/"} class="text-2xl font-bold text-brand">
+        Realworld
+      </.link>
+
+      <nav class="flex items-center gap-4">
+        <.link navigate={~p"/articles"} class="text-sm font-medium hover:text-brand">
+          Articles
+        </.link>
+        <%= if @current_user do %>
+          <.link navigate={~p"/following/articles"} class="text-sm font-medium hover:text-brand">
+            Following
+          </.link>
+        <% end %>
+      </nav>
     </div>
-    <div class="flex items-center gap-4 font-semibold leading-6 text-zinc-900">
-      <a href="https://twitter.com/elixirphoenix" class="hover:text-zinc-700">
-        @elixirphoenix
-      </a>
-      <a href="https://github.com/phoenixframework/phoenix" class="hover:text-zinc-700">
-        GitHub
-      </a>
-      <a
-        href="https://hexdocs.pm/phoenix/overview.html"
-        class="rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80"
-      >
-        Get Started <span aria-hidden="true">&rarr;</span>
-      </a>
+
+    <div class="flex items-center gap-4">
+      <%= if @current_user do %>
+        <.link navigate={~p"/articles/new"} class="text-sm font-medium hover:text-brand">
+          <.icon name="hero-pencil-square" class="h-4 w-4 inline mr-1" /> Write
+        </.link>
+        <.link
+          navigate={~p"/profiles/#{@current_user}"}
+          class="text-sm font-medium hover:text-brand flex items-center"
+        >
+          <.user_avatar user={@current_user} size="sm" class="mr-2" />
+          <span>{@current_user.username}</span>
+        </.link>
+        <.link navigate={~p"/users/settings"} class="text-sm font-medium hover:text-brand">
+          <.icon name="hero-cog-6-tooth" class="h-5 w-5" />
+        </.link>
+        <.link
+          href={~p"/users/log_out"}
+          method="delete"
+          class="text-sm font-medium hover:text-brand"
+        >
+          Sign out
+        </.link>
+      <% else %>
+        <.link navigate={~p"/users/log_in"} class="text-sm font-medium hover:text-brand">
+          Sign in
+        </.link>
+        <.link navigate={~p"/users/register"} class="text-sm font-medium hover:text-brand">
+          Sign up
+        </.link>
+      <% end %>
     </div>
   </div>
 </header>

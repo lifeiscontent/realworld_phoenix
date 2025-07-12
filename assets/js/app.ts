@@ -22,16 +22,28 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
-let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
-let liveSocket = new LiveSocket("/live", Socket, {
+// Extend Window interface to include our custom properties
+declare global {
+  interface Window {
+    liveSocket?: LiveSocket;
+  }
+}
+
+const csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content") ?? null
+
+if (!csrfToken) {
+  throw new Error("CSRF token not found")
+}
+
+const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
-  params: {_csrf_token: csrfToken}
+  params: {_csrf_token: csrfToken, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone}
 })
 
 // Show progress bar on live navigation and form submits
-topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
-window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
+topbar.config({barColors: {0: "#FD4F00"}, shadowColor: "rgba(0, 0, 0, .3)"})
+window.addEventListener("phx:page-loading-start", (_info: Event) => topbar.show(300))
+window.addEventListener("phx:page-loading-stop", (_info: Event) => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
@@ -41,4 +53,9 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
+
+// Handle scroll-to-top event for infinite scroll pages
+window.addEventListener("scroll-to-top", () => {
+  window.scrollTo(0, 0)
+})
 

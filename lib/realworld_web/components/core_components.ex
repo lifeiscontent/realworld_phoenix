@@ -219,8 +219,12 @@ defmodule RealworldWeb.CoreComponents do
 
       <.button>Send!</.button>
       <.button phx-click="go" class="ml-2">Send!</.button>
+      <.button variant="secondary">Cancel</.button>
+      <.button variant="danger">Delete</.button>
+      <.button variant="outline">Follow</.button>
   """
   attr :type, :string, default: nil
+  attr :variant, :string, default: "primary", values: ~w(primary secondary danger outline)
   attr :class, :string, default: nil
   attr :rest, :global, include: ~w(disabled form name value)
 
@@ -231,8 +235,9 @@ defmodule RealworldWeb.CoreComponents do
     <button
       type={@type}
       class={[
-        "phx-submit-loading:opacity-75 rounded-lg bg-zinc-900 hover:bg-zinc-700 py-2 px-3",
-        "text-sm font-semibold leading-6 text-white active:text-white/80",
+        "phx-submit-loading:opacity-75 rounded-lg py-2 px-3",
+        "text-sm font-semibold leading-6 transition-colors",
+        variant_class(@variant),
         @class
       ]}
       {@rest}
@@ -241,6 +246,17 @@ defmodule RealworldWeb.CoreComponents do
     </button>
     """
   end
+
+  defp variant_class("primary"),
+    do: "bg-zinc-900 hover:bg-zinc-700 text-white active:text-white/80"
+
+  defp variant_class("secondary"),
+    do: "bg-gray-200 hover:bg-gray-300 text-gray-700 active:text-gray-800"
+
+  defp variant_class("danger"), do: "bg-red-600 hover:bg-red-700 text-white active:text-white/80"
+
+  defp variant_class("outline"),
+    do: "bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 active:bg-gray-100"
 
   @doc """
   Renders an input with label and error messages.
@@ -275,7 +291,7 @@ defmodule RealworldWeb.CoreComponents do
 
   attr :type, :string,
     default: "text",
-    values: ~w(checkbox color date datetime-local email file month number password
+    values: ~w(checkbox color date datetime-local email file hidden month number password
                range search select tel text textarea time url week)
 
   attr :field, Phoenix.HTML.FormField,
@@ -323,6 +339,21 @@ defmodule RealworldWeb.CoreComponents do
         />
         {@label}
       </label>
+      <.error :for={msg <- @errors}>{msg}</.error>
+    </div>
+    """
+  end
+
+  def input(%{type: "hidden"} = assigns) do
+    ~H"""
+    <div>
+      <input
+        type="hidden"
+        name={@name}
+        id={@id}
+        value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+        {@rest}
+      />
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """

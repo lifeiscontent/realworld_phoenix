@@ -1,0 +1,10 @@
+{
+  "name": "realworld-assets",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "@types/phoenix": "1.6.6",
+    "@types/phoenix_live_view": "1.0.0"
+  }
+}

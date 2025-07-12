@@ -1,0 +1,98 @@
+<.header>
+  {@page_title}
+  <:actions>
+    <.link :if={Policies.permit?(:create_article, @current_user)} patch={~p"/articles/new"}>
+      <.button>New Article</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<div class="flex items-center gap-6 mb-6 border-b border-gray-200">
+  <.link
+    navigate={~p"/articles"}
+    class={[
+      "py-2 px-1 border-b-2 font-medium text-sm transition-colors",
+      if(@live_action == :index && !@tag,
+        do: "border-brand text-brand",
+        else: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+      )
+    ]}
+  >
+    Global Feed
+  </.link>
+  <%= if @current_user do %>
+    <.link
+      navigate={~p"/following/articles"}
+      class={[
+        "py-2 px-1 border-b-2 font-medium text-sm transition-colors",
+        if(@live_action == :following && !@tag,
+          do: "border-brand text-brand",
+          else: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+        )
+      ]}
+    >
+      Your Feed
+    </.link>
+  <% end %>
+  <%= if @tag do %>
+    <.link
+      navigate={
+        case @live_action do
+          :following -> ~p"/following/articles?tag=#{@tag}"
+          _ -> ~p"/articles?tag=#{@tag}"
+        end
+      }
+      class="py-2 px-1 border-b-2 font-medium text-sm transition-colors border-brand text-brand"
+    >
+      #{@tag}
+    </.link>
+  <% end %>
+</div>
+
+<div
+  id="articles"
+  phx-update="stream"
+  phx-viewport-bottom={!@end_of_feed? && JS.push("next-page")}
+  phx-mounted={JS.dispatch("scroll-to-top")}
+  class={[
+    "mt-8 space-y-6",
+    if(@end_of_feed?, do: "pb-10", else: "pb-[calc(200vh)]")
+  ]}
+>
+  <p id="articles-empty" phx-update="ignore" class="text-gray-500 only:block hidden">
+    <%= if @live_action == :following do %>
+      No articles from people you follow yet. Follow some users to see their articles here!
+    <% else %>
+      No articles published yet. Be the first to write one!
+    <% end %>
+  </p>
+
+  <.article_card
+    :for={{dom_id, article} <- @streams.articles}
+    id={dom_id}
+    article={article}
+    current_user={@current_user}
+    live_action={@live_action}
+  />
+</div>
+
+<div :if={@end_of_feed? && @page > 1} class="text-center py-10 text-gray-500">
+  <p class="text-lg">You've reached the end of the feed</p>
+</div>
+
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="article-modal"
+  show
+  on_cancel={JS.patch(~p"/articles")}
+>
+  <.live_component
+    module={RealworldWeb.ArticleLive.FormComponent}
+    id={@article.id || :new}
+    title={@page_title}
+    action={@live_action}
+    article={@article}
+    current_user={@current_user}
+    patch={~p"/articles"}
+  />
+</.modal>
