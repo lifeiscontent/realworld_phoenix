@@ -102,7 +102,7 @@ defmodule RealworldWeb.AppComponents do
       </div>
 
       <.link navigate={~p"/articles/#{@article}"}>
-        <h2 class="text-2xl font-bold mb-3 hover:text-blue-600">{@article.title}</h2>
+        <h2 class="text-2xl font-bold mb-3 hover:text-brand">{@article.title}</h2>
       </.link>
 
       <p class="text-gray-700 mb-6 leading-relaxed">
@@ -120,7 +120,7 @@ defmodule RealworldWeb.AppComponents do
             <.link
               :if={@current_user && Policies.permit?(:update_article, @current_user, @article)}
               patch={~p"/articles/#{@article}/edit"}
-              class="text-sm text-blue-600 hover:underline"
+              class="text-sm text-brand hover:underline"
             >
               Edit
             </.link>

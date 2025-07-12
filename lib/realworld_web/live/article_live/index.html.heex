@@ -13,7 +13,7 @@
     class={[
       "py-2 px-1 border-b-2 font-medium text-sm transition-colors",
       if(@live_action == :index && !@tag,
-        do: "border-blue-500 text-blue-600",
+        do: "border-brand text-brand",
         else: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
       )
     ]}
@@ -26,7 +26,7 @@
       class={[
         "py-2 px-1 border-b-2 font-medium text-sm transition-colors",
         if(@live_action == :following && !@tag,
-          do: "border-blue-500 text-blue-600",
+          do: "border-brand text-brand",
           else: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
         )
       ]}
@@ -42,7 +42,7 @@
           _ -> ~p"/articles?tag=#{@tag}"
         end
       }
-      class="py-2 px-1 border-b-2 font-medium text-sm transition-colors border-blue-500 text-blue-600"
+      class="py-2 px-1 border-b-2 font-medium text-sm transition-colors border-brand text-brand"
     >
       #{@tag}
     </.link>
@@ -53,6 +53,7 @@
   id="articles"
   phx-update="stream"
   phx-viewport-bottom={!@end_of_feed? && JS.push("next-page")}
+  phx-mounted={JS.dispatch("scroll-to-top")}
   class={[
     "mt-8 space-y-6",
     if(@end_of_feed?, do: "pb-10", else: "pb-[calc(200vh)]")
